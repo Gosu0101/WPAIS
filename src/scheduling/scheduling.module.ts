@@ -3,13 +3,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Project } from './entities/project.entity';
 import { Episode } from './entities/episode.entity';
 import { Milestone } from './entities/milestone.entity';
-import { VelocityConfigService } from './services';
+import { VelocityConfigService, SchedulerService } from './services';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Project, Episode, Milestone]),
   ],
-  providers: [VelocityConfigService],
-  exports: [VelocityConfigService],
+  providers: [VelocityConfigService, SchedulerService],
+  exports: [VelocityConfigService, SchedulerService],
 })
 export class SchedulingModule {}

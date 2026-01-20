@@ -1,1 +1,2 @@
 export { VelocityConfigService } from './velocity-config.service';
+export { SchedulerService } from './scheduler.service';

@@ -47,11 +47,11 @@ WPAIS 스케줄링 엔진 모듈의 구현 계획입니다. NestJS와 TypeORM을
     - 적응기 여부 판단 로직
     - _Requirements: 2.1, 2.2_
 
-- [ ] 4. Checkpoint - VelocityConfigService 완료
+- [x] 4. Checkpoint - VelocityConfigService 완료
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. SchedulerService 핵심 로직 구현
-  - [ ] 5.1 calculateSealDate 메서드 구현
+  - [x] 5.1 calculateSealDate 메서드 구현
     - 런칭일 - 30일 계산
     - _Requirements: 1.1, 3.1_
 
