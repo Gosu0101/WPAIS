@@ -1,6 +1,7 @@
 import * as fc from 'fast-check';
 import { SchedulerService } from './scheduler.service';
 import { VelocityConfigService } from './velocity-config.service';
+import { MilestoneType } from '../entities';
 
 describe('SchedulerService', () => {
   let schedulerService: SchedulerService;
@@ -360,6 +361,165 @@ describe('SchedulerService', () => {
                 expect(schedule.duration).toBe(7);
               }
             }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('generateMilestones', () => {
+    it('should generate all required milestones for 10 episodes', () => {
+      const launchDate = new Date('2027-01-31');
+      const milestones = schedulerService.generateMilestones(launchDate, 10);
+      
+      // Should have 7 milestones: planning, hiring, production start, 3ep, 5ep, 7ep seal, launch
+      expect(milestones).toHaveLength(7);
+      
+      // Verify milestone types
+      const types = milestones.map(m => m.type);
+      expect(types).toContain(MilestoneType.PLANNING_COMPLETE);
+      expect(types).toContain(MilestoneType.HIRING_COMPLETE);
+      expect(types).toContain(MilestoneType.PRODUCTION_START);
+      expect(types).toContain(MilestoneType.EPISODE_3_COMPLETE);
+      expect(types).toContain(MilestoneType.EPISODE_5_COMPLETE);
+      expect(types).toContain(MilestoneType.EPISODE_7_SEAL);
+      expect(types).toContain(MilestoneType.LAUNCH);
+    });
+
+    it('should generate fewer milestones for small episode counts', () => {
+      const launchDate = new Date('2027-01-31');
+      
+      // 2 episodes: no 3ep, 5ep, 7ep milestones
+      const milestones2 = schedulerService.generateMilestones(launchDate, 2);
+      expect(milestones2).toHaveLength(4); // planning, hiring, production start, launch
+      
+      // 4 episodes: has 3ep, no 5ep, 7ep
+      const milestones4 = schedulerService.generateMilestones(launchDate, 4);
+      expect(milestones4).toHaveLength(5); // planning, hiring, production start, 3ep, launch
+      
+      // 6 episodes: has 3ep, 5ep, no 7ep
+      const milestones6 = schedulerService.generateMilestones(launchDate, 6);
+      expect(milestones6).toHaveLength(6); // planning, hiring, production start, 3ep, 5ep, launch
+    });
+
+    it('should set 7-episode seal milestone date equal to seal date', () => {
+      const launchDate = new Date('2027-01-31');
+      const milestones = schedulerService.generateMilestones(launchDate, 10);
+      const sealDate = schedulerService.calculateSealDate(launchDate);
+      
+      const sealMilestone = milestones.find(m => m.type === MilestoneType.EPISODE_7_SEAL);
+      expect(sealMilestone).toBeDefined();
+      expect(sealMilestone!.targetDate.getTime()).toBe(sealDate.getTime());
+    });
+
+    it('should set launch milestone date equal to launch date', () => {
+      const launchDate = new Date('2027-01-31');
+      const milestones = schedulerService.generateMilestones(launchDate, 10);
+      
+      const launchMilestone = milestones.find(m => m.type === MilestoneType.LAUNCH);
+      expect(launchMilestone).toBeDefined();
+      expect(launchMilestone!.targetDate.getTime()).toBe(launchDate.getTime());
+    });
+
+    it('should throw error for invalid episode count', () => {
+      const launchDate = new Date('2027-01-31');
+      
+      expect(() => schedulerService.generateMilestones(launchDate, 0)).toThrow();
+      expect(() => schedulerService.generateMilestones(launchDate, -1)).toThrow();
+    });
+
+    it('should not mutate the original launch date', () => {
+      const launchDate = new Date('2027-01-31');
+      const originalTime = launchDate.getTime();
+      
+      schedulerService.generateMilestones(launchDate, 10);
+      
+      expect(launchDate.getTime()).toBe(originalTime);
+    });
+
+    /**
+     * Feature: scheduling-engine, Property 8: Milestone Generation Completeness
+     * 
+     * *For any* created project, the milestone list SHALL contain at least:
+     * - Planning completion milestone
+     * - Hiring completion milestone
+     * - Production start milestone
+     * - 3-episode completion milestone (if episodeCount >= 3)
+     * - 5-episode completion milestone (if episodeCount >= 5)
+     * - 7-episode seal milestone (if episodeCount >= 7)
+     * 
+     * **Validates: Requirements 5.1, 3.3**
+     */
+    it('should generate all required milestones for any valid inputs (Property 8)', () => {
+      fc.assert(
+        fc.property(
+          fc.date({ min: new Date('2025-01-01'), max: new Date('2100-12-31') }).filter(d => !isNaN(d.getTime())),
+          fc.integer({ min: 1, max: 100 }),
+          (launchDate: Date, episodeCount: number) => {
+            const milestones = schedulerService.generateMilestones(launchDate, episodeCount);
+            const types = milestones.map(m => m.type);
+            
+            // Required milestones for all projects
+            expect(types).toContain(MilestoneType.PLANNING_COMPLETE);
+            expect(types).toContain(MilestoneType.HIRING_COMPLETE);
+            expect(types).toContain(MilestoneType.PRODUCTION_START);
+            expect(types).toContain(MilestoneType.LAUNCH);
+            
+            // Conditional milestones based on episode count
+            if (episodeCount >= 3) {
+              expect(types).toContain(MilestoneType.EPISODE_3_COMPLETE);
+            } else {
+              expect(types).not.toContain(MilestoneType.EPISODE_3_COMPLETE);
+            }
+            
+            if (episodeCount >= 5) {
+              expect(types).toContain(MilestoneType.EPISODE_5_COMPLETE);
+            } else {
+              expect(types).not.toContain(MilestoneType.EPISODE_5_COMPLETE);
+            }
+            
+            if (episodeCount >= 7) {
+              expect(types).toContain(MilestoneType.EPISODE_7_SEAL);
+            } else {
+              expect(types).not.toContain(MilestoneType.EPISODE_7_SEAL);
+            }
+            
+            // Verify no duplicate milestone types
+            const uniqueTypes = new Set(types);
+            expect(uniqueTypes.size).toBe(types.length);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    /**
+     * Feature: scheduling-engine, Property 9: Seal Milestone Date Consistency
+     * 
+     * *For any* project, the 7-episode seal milestone's target date SHALL equal
+     * the project's seal date.
+     * 
+     * **Validates: Requirements 5.4**
+     */
+    it('should have seal milestone date equal to seal date for any valid inputs (Property 9)', () => {
+      fc.assert(
+        fc.property(
+          fc.date({ min: new Date('2025-01-01'), max: new Date('2100-12-31') }).filter(d => !isNaN(d.getTime())),
+          fc.integer({ min: 7, max: 100 }), // At least 7 episodes to have seal milestone
+          (launchDate: Date, episodeCount: number) => {
+            const milestones = schedulerService.generateMilestones(launchDate, episodeCount);
+            const sealDate = schedulerService.calculateSealDate(launchDate);
+            
+            // Find the 7-episode seal milestone
+            const sealMilestone = milestones.find(m => m.type === MilestoneType.EPISODE_7_SEAL);
+            
+            // Verify seal milestone exists and has correct date
+            expect(sealMilestone).toBeDefined();
+            expect(sealMilestone!.targetDate.getTime()).toBe(sealDate.getTime());
+            
+            // Verify seal milestone name
+            expect(sealMilestone!.name).toBe('7화 봉인');
           }
         ),
         { numRuns: 100 }

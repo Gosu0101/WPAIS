@@ -100,17 +100,17 @@ WPAIS 스케줄링 엔진 모듈의 구현 계획입니다. NestJS와 TypeORM을
     - **Property 6: Episode Spacing Consistency**
     - **Validates: Requirements 4.2, 4.3**
 
-- [ ] 8. 마일스톤 생성 구현
-  - [ ] 8.1 generateMilestones 메서드 구현
+- [x] 8. 마일스톤 생성 구현
+  - [x] 8.1 generateMilestones 메서드 구현
     - 기획 완료, 채용 완료, 제작 시작 마일스톤
     - 3화/5화/7화 완성 마일스톤
     - _Requirements: 5.1, 5.2, 3.3_
 
-  - [ ] 8.2 Property test: Milestone generation completeness
+  - [x] 8.2 Property test: Milestone generation completeness
     - **Property 8: Milestone Generation Completeness**
     - **Validates: Requirements 5.1, 3.3**
 
-  - [ ] 8.3 Property test: Seal milestone date consistency
+  - [x] 8.3 Property test: Seal milestone date consistency
     - **Property 9: Seal Milestone Date Consistency**
     - **Validates: Requirements 5.4**
 

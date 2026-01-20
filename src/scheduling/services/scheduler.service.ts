@@ -1,6 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { VelocityConfigService } from './velocity-config.service';
 import { EpisodeSchedule } from '../types';
+import { MilestoneType } from '../entities';
+
+/**
+ * MilestoneSchedule - 마일스톤 스케줄 정보
+ */
+export interface MilestoneSchedule {
+  name: string;
+  type: MilestoneType;
+  targetDate: Date;
+}
 
 /**
  * SchedulerService - 스케줄링의 핵심 로직을 담당하는 메인 서비스
@@ -125,5 +135,86 @@ export class SchedulerService {
     }
 
     return schedules;
+  }
+
+  /**
+   * 마일스톤을 생성합니다.
+   * 기획 완료, 채용 완료, 제작 시작, 3화/5화/7화 완성 마일스톤을 생성합니다.
+   * 
+   * @param launchDate 런칭 목표일
+   * @param episodeCount 총 회차 수 (기본값: 10)
+   * @returns 마일스톤 스케줄 배열
+   */
+  generateMilestones(launchDate: Date, episodeCount: number = 10): MilestoneSchedule[] {
+    if (episodeCount < 1) {
+      throw new Error(`Invalid episode count: ${episodeCount}. Episode count must be a positive integer.`);
+    }
+
+    const sealDate = this.calculateSealDate(launchDate);
+    const productionStartDate = this.calculateProductionStartDate(launchDate, episodeCount);
+    const hiringStartDate = this.calculateHiringStartDate(productionStartDate);
+    const planningStartDate = this.calculatePlanningStartDate(hiringStartDate);
+    
+    // 회차별 스케줄 생성 (마일스톤 날짜 계산용)
+    const episodeSchedules = this.generateEpisodeSchedules(productionStartDate, episodeCount);
+
+    const milestones: MilestoneSchedule[] = [];
+
+    // 기획 완료 마일스톤 (기획 시작일 + 56일 = 채용 시작일)
+    milestones.push({
+      name: '기획 완료',
+      type: MilestoneType.PLANNING_COMPLETE,
+      targetDate: new Date(hiringStartDate),
+    });
+
+    // 채용 완료 마일스톤 (채용 시작일 + 35일 = 제작 시작일)
+    milestones.push({
+      name: '채용 완료',
+      type: MilestoneType.HIRING_COMPLETE,
+      targetDate: new Date(productionStartDate),
+    });
+
+    // 제작 시작 마일스톤
+    milestones.push({
+      name: '제작 시작',
+      type: MilestoneType.PRODUCTION_START,
+      targetDate: new Date(productionStartDate),
+    });
+
+    // 3화 완성 마일스톤 (episodeCount >= 3인 경우)
+    if (episodeCount >= 3) {
+      milestones.push({
+        name: '3화 완성',
+        type: MilestoneType.EPISODE_3_COMPLETE,
+        targetDate: new Date(episodeSchedules[2].dueDate),
+      });
+    }
+
+    // 5화 완성 마일스톤 (episodeCount >= 5인 경우)
+    if (episodeCount >= 5) {
+      milestones.push({
+        name: '5화 완성',
+        type: MilestoneType.EPISODE_5_COMPLETE,
+        targetDate: new Date(episodeSchedules[4].dueDate),
+      });
+    }
+
+    // 7화 봉인 마일스톤 (episodeCount >= 7인 경우)
+    if (episodeCount >= 7) {
+      milestones.push({
+        name: '7화 봉인',
+        type: MilestoneType.EPISODE_7_SEAL,
+        targetDate: new Date(sealDate),
+      });
+    }
+
+    // 런칭 마일스톤
+    milestones.push({
+      name: '런칭',
+      type: MilestoneType.LAUNCH,
+      targetDate: new Date(launchDate),
+    });
+
+    return milestones;
   }
 }
