@@ -50,36 +50,36 @@ WPAIS 스케줄링 엔진 모듈의 구현 계획입니다. NestJS와 TypeORM을
 - [x] 4. Checkpoint - VelocityConfigService 완료
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. SchedulerService 핵심 로직 구현
+- [x] 5. SchedulerService 핵심 로직 구현
   - [x] 5.1 calculateSealDate 메서드 구현
     - 런칭일 - 30일 계산
     - _Requirements: 1.1, 3.1_
 
-  - [ ] 5.2 Property test: Seal date calculation
+  - [x] 5.2 Property test: Seal date calculation
     - **Property 1: Seal Date Calculation**
     - **Validates: Requirements 1.1, 3.1**
 
-  - [ ] 5.3 calculateTotalProductionDuration 메서드 구현
+  - [x] 5.3 calculateTotalProductionDuration 메서드 구현
     - 전체 제작 기간 합산 (적응기 + 정상기)
     - _Requirements: 1.4, 3.2_
 
-  - [ ] 5.4 calculateProductionStartDate 메서드 구현
+  - [x] 5.4 calculateProductionStartDate 메서드 구현
     - 봉인일 - 총 제작 기간
     - _Requirements: 1.2, 3.2_
 
-  - [ ] 5.5 Property test: Production start date calculation
+  - [x] 5.5 Property test: Production start date calculation
     - **Property 4: Production Start Date Calculation**
     - **Validates: Requirements 1.2, 3.2**
 
-  - [ ] 5.6 calculateHiringStartDate 메서드 구현
+  - [x] 5.6 calculateHiringStartDate 메서드 구현
     - 제작 시작일 - 35일 (5주)
     - _Requirements: 3.4_
 
-  - [ ] 5.7 calculatePlanningStartDate 메서드 구현
+  - [x] 5.7 calculatePlanningStartDate 메서드 구현
     - 채용 시작일 - 56일 (8주)
     - _Requirements: 3.5_
 
-  - [ ] 5.8 Property test: Milestone date relationships
+  - [x] 5.8 Property test: Milestone date relationships
     - **Property 7: Milestone Date Relationships**
     - **Validates: Requirements 3.4, 3.5**
 
