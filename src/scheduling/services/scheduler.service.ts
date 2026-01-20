@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { VelocityConfigService } from './velocity-config.service';
+import { EpisodeSchedule } from '../types';
 
 /**
  * SchedulerService - 스케줄링의 핵심 로직을 담당하는 메인 서비스
@@ -83,5 +84,46 @@ export class SchedulerService {
     const planningStartDate = new Date(hiringStartDate);
     planningStartDate.setDate(planningStartDate.getDate() - 56);
     return planningStartDate;
+  }
+
+  /**
+   * 회차별 스케줄을 생성합니다.
+   * 제작 시작일부터 각 회차의 시작일, 마감일, 기간을 계산합니다.
+   * 
+   * - 적응기(1~10화): 14일 간격
+   * - 정상기(11화+): 7일 간격
+   * 
+   * @param productionStartDate 제작 시작일
+   * @param episodeCount 총 회차 수
+   * @returns 회차별 스케줄 배열
+   */
+  generateEpisodeSchedules(productionStartDate: Date, episodeCount: number): EpisodeSchedule[] {
+    if (episodeCount < 1) {
+      throw new Error(`Invalid episode count: ${episodeCount}. Episode count must be a positive integer.`);
+    }
+
+    const schedules: EpisodeSchedule[] = [];
+    let currentStartDate = new Date(productionStartDate);
+
+    for (let episodeNumber = 1; episodeNumber <= episodeCount; episodeNumber++) {
+      const duration = this.velocityConfigService.getDuration(episodeNumber);
+      const isLearningPeriod = this.velocityConfigService.isLearningPeriod(episodeNumber);
+      
+      const dueDate = new Date(currentStartDate);
+      dueDate.setDate(dueDate.getDate() + duration);
+
+      schedules.push({
+        episodeNumber,
+        startDate: new Date(currentStartDate),
+        dueDate,
+        duration,
+        isLearningPeriod,
+      });
+
+      // 다음 회차의 시작일은 현재 회차의 마감일
+      currentStartDate = new Date(dueDate);
+    }
+
+    return schedules;
   }
 }

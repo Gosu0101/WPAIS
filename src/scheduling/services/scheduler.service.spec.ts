@@ -221,4 +221,150 @@ describe('SchedulerService', () => {
       );
     });
   });
+
+  describe('generateEpisodeSchedules', () => {
+    it('should generate correct schedules for 10 episodes', () => {
+      const productionStartDate = new Date('2026-08-14');
+      const schedules = schedulerService.generateEpisodeSchedules(productionStartDate, 10);
+      
+      expect(schedules).toHaveLength(10);
+      
+      // First episode
+      expect(schedules[0].episodeNumber).toBe(1);
+      expect(schedules[0].startDate).toEqual(new Date('2026-08-14'));
+      expect(schedules[0].dueDate).toEqual(new Date('2026-08-28'));
+      expect(schedules[0].duration).toBe(14);
+      expect(schedules[0].isLearningPeriod).toBe(true);
+      
+      // Last episode (10th)
+      expect(schedules[9].episodeNumber).toBe(10);
+      expect(schedules[9].duration).toBe(14);
+      expect(schedules[9].isLearningPeriod).toBe(true);
+    });
+
+    it('should generate correct schedules for 12 episodes (mixed periods)', () => {
+      const productionStartDate = new Date('2026-08-14');
+      const schedules = schedulerService.generateEpisodeSchedules(productionStartDate, 12);
+      
+      expect(schedules).toHaveLength(12);
+      
+      // Episode 10 (last learning period)
+      expect(schedules[9].episodeNumber).toBe(10);
+      expect(schedules[9].duration).toBe(14);
+      expect(schedules[9].isLearningPeriod).toBe(true);
+      
+      // Episode 11 (first normal period)
+      expect(schedules[10].episodeNumber).toBe(11);
+      expect(schedules[10].duration).toBe(7);
+      expect(schedules[10].isLearningPeriod).toBe(false);
+      
+      // Episode 12
+      expect(schedules[11].episodeNumber).toBe(12);
+      expect(schedules[11].duration).toBe(7);
+      expect(schedules[11].isLearningPeriod).toBe(false);
+    });
+
+    it('should throw error for invalid episode count', () => {
+      const productionStartDate = new Date('2026-08-14');
+      
+      expect(() => schedulerService.generateEpisodeSchedules(productionStartDate, 0)).toThrow();
+      expect(() => schedulerService.generateEpisodeSchedules(productionStartDate, -1)).toThrow();
+    });
+
+    it('should not mutate the original production start date', () => {
+      const productionStartDate = new Date('2026-08-14');
+      const originalTime = productionStartDate.getTime();
+      
+      schedulerService.generateEpisodeSchedules(productionStartDate, 10);
+      
+      expect(productionStartDate.getTime()).toBe(originalTime);
+    });
+
+    it('should have consecutive episodes where next start equals previous due date', () => {
+      const productionStartDate = new Date('2026-08-14');
+      const schedules = schedulerService.generateEpisodeSchedules(productionStartDate, 15);
+      
+      for (let i = 0; i < schedules.length - 1; i++) {
+        expect(schedules[i + 1].startDate.getTime()).toBe(schedules[i].dueDate.getTime());
+      }
+    });
+
+    /**
+     * Feature: scheduling-engine, Property 5: Episode Due Date Ordering
+     * 
+     * *For any* project with multiple episodes, episode N's due date SHALL be
+     * strictly before episode N+1's due date for all consecutive episode pairs.
+     * 
+     * **Validates: Requirements 4.1**
+     */
+    it('should have strictly increasing due dates for any valid inputs (Property 5)', () => {
+      fc.assert(
+        fc.property(
+          fc.date({ min: new Date('2025-01-01'), max: new Date('2100-12-31') }).filter(d => !isNaN(d.getTime())),
+          fc.integer({ min: 2, max: 100 }),
+          (productionStartDate: Date, episodeCount: number) => {
+            const schedules = schedulerService.generateEpisodeSchedules(productionStartDate, episodeCount);
+            
+            // Verify episode count
+            expect(schedules.length).toBe(episodeCount);
+            
+            // Verify due date ordering: episode N's due date < episode N+1's due date
+            for (let i = 0; i < schedules.length - 1; i++) {
+              expect(schedules[i].dueDate.getTime()).toBeLessThan(schedules[i + 1].dueDate.getTime());
+            }
+            
+            // Verify episode numbers are sequential
+            for (let i = 0; i < schedules.length; i++) {
+              expect(schedules[i].episodeNumber).toBe(i + 1);
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    /**
+     * Feature: scheduling-engine, Property 6: Episode Spacing Consistency
+     * 
+     * *For any* project:
+     * - Episodes 1-10 SHALL have due dates spaced exactly 14 days apart
+     * - Episodes 11+ SHALL have due dates spaced exactly 7 days apart from the previous episode
+     * 
+     * **Validates: Requirements 4.2, 4.3**
+     */
+    it('should have correct spacing between episodes based on period (Property 6)', () => {
+      fc.assert(
+        fc.property(
+          fc.date({ min: new Date('2025-01-01'), max: new Date('2100-12-31') }).filter(d => !isNaN(d.getTime())),
+          fc.integer({ min: 1, max: 100 }),
+          (productionStartDate: Date, episodeCount: number) => {
+            const schedules = schedulerService.generateEpisodeSchedules(productionStartDate, episodeCount);
+            
+            for (const schedule of schedules) {
+              const expectedDuration = schedule.isLearningPeriod ? 14 : 7;
+              
+              // Verify duration matches the period
+              expect(schedule.duration).toBe(expectedDuration);
+              
+              // Verify due date = start date + duration
+              const expectedDueDate = new Date(schedule.startDate);
+              expectedDueDate.setDate(expectedDueDate.getDate() + expectedDuration);
+              expect(schedule.dueDate.getTime()).toBe(expectedDueDate.getTime());
+              
+              // Verify learning period flag is correct
+              if (schedule.episodeNumber <= 10) {
+                expect(schedule.isLearningPeriod).toBe(true);
+                expect(schedule.duration).toBe(14);
+              } else {
+                expect(schedule.isLearningPeriod).toBe(false);
+                expect(schedule.duration).toBe(7);
+              }
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
 });

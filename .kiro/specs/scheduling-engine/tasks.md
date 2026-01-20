@@ -83,20 +83,20 @@ WPAIS 스케줄링 엔진 모듈의 구현 계획입니다. NestJS와 TypeORM을
     - **Property 7: Milestone Date Relationships**
     - **Validates: Requirements 3.4, 3.5**
 
-- [ ] 6. Checkpoint - 날짜 계산 로직 완료
+- [x] 6. Checkpoint - 날짜 계산 로직 완료
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. 회차별 마감일 계산 구현
-  - [ ] 7.1 generateEpisodeSchedules 메서드 구현
+- [x] 7. 회차별 마감일 계산 구현
+  - [x] 7.1 generateEpisodeSchedules 메서드 구현
     - 회차별 시작일, 마감일, 기간 계산
     - 적응기/정상기 구분 적용
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 7.2 Property test: Episode due date ordering
+  - [x] 7.2 Property test: Episode due date ordering
     - **Property 5: Episode Due Date Ordering**
     - **Validates: Requirements 4.1**
 
-  - [ ] 7.3 Property test: Episode spacing consistency
+  - [x] 7.3 Property test: Episode spacing consistency
     - **Property 6: Episode Spacing Consistency**
     - **Validates: Requirements 4.2, 4.3**
 
