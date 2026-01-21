@@ -12,7 +12,7 @@ WPAIS 스케줄링 엔진 모듈의 구현 계획입니다. NestJS와 TypeORM을
   - fast-check 테스트 프레임워크 설정
   - _Requirements: 1.3_
 
-- [ ] 2. 데이터 모델 구현
+- [x] 2. 데이터 모델 구현
   - [x] 2.1 Project 엔티티 구현
     - id, title, launchDate, sealDate, productionStartDate, hiringStartDate, planningStartDate, velocityConfig 필드 정의
     - TypeORM 데코레이터 적용
@@ -148,28 +148,28 @@ WPAIS 스케줄링 엔진 모듈의 구현 계획입니다. NestJS와 TypeORM을
     - **Property 11: Recalculation Consistency**
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 
-- [ ] 13. Checkpoint - SchedulerService 완료
+- [x] 13. Checkpoint - SchedulerService 완료
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 14. ProjectManager 구현
-  - [ ] 14.1 createProject 메서드 구현
+- [x] 14. ProjectManager 구현
+  - [x] 14.1 createProject 메서드 구현
     - 프로젝트 생성 및 스케줄 계산
     - DB 저장
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 14.2 Property test: Project data round-trip
+  - [x] 14.2 Property test: Project data round-trip
     - **Property 3: Project Data Round-Trip**
     - **Validates: Requirements 1.3, 4.4**
 
-  - [ ] 14.3 getMilestones 메서드 구현
+  - [x] 14.3 getMilestones 메서드 구현
     - 프로젝트 마일스톤 조회
     - _Requirements: 5.3_
 
-  - [ ] 14.4 updateLaunchDate 메서드 구현
+  - [x] 14.4 updateLaunchDate 메서드 구현
     - 런칭일 업데이트 및 재계산 트리거
     - _Requirements: 7.1, 7.2_
 
-- [ ] 15. Final checkpoint - 전체 모듈 완료
+- [x] 15. Final checkpoint - 전체 모듈 완료
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
