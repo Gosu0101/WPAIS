@@ -1,16 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { VelocityConfigService } from './velocity-config.service';
-import { EpisodeSchedule } from '../types';
+import { EpisodeSchedule, MasterSchedule, MilestoneSchedule } from '../types';
 import { MilestoneType } from '../entities';
-
-/**
- * MilestoneSchedule - 마일스톤 스케줄 정보
- */
-export interface MilestoneSchedule {
-  name: string;
-  type: MilestoneType;
-  targetDate: Date;
-}
 
 /**
  * SchedulerService - 스케줄링의 핵심 로직을 담당하는 메인 서비스
@@ -216,5 +207,58 @@ export class SchedulerService {
     });
 
     return milestones;
+  }
+
+  /**
+   * 런칭일을 기준으로 전체 마스터 스케줄을 계산합니다.
+   * 
+   * 모든 계산 로직을 통합하여 MasterSchedule 객체를 반환합니다:
+   * - 봉인일 (런칭일 - 30일)
+   * - 제작 시작일 (봉인일 - 총 제작 기간)
+   * - 채용 시작일 (제작 시작일 - 35일)
+   * - 기획 시작일 (채용 시작일 - 56일)
+   * - 회차별 스케줄
+   * - 마일스톤 목록
+   * 
+   * @param launchDate 런칭 목표일
+   * @param episodeCount 런칭 시 확보할 회차 수 (기본값: 10)
+   * @returns 계산된 마스터 스케줄
+   */
+  calculateMasterSchedule(launchDate: Date, episodeCount: number = 10): MasterSchedule {
+    if (episodeCount < 1) {
+      throw new Error(`Invalid episode count: ${episodeCount}. Episode count must be a positive integer.`);
+    }
+
+    // 1. 봉인일 계산 (런칭일 - 30일)
+    const sealDate = this.calculateSealDate(launchDate);
+
+    // 2. 전체 제작 기간 계산
+    const totalProductionDays = this.calculateTotalProductionDuration(episodeCount);
+
+    // 3. 제작 시작일 계산 (봉인일 - 총 제작 기간)
+    const productionStartDate = this.calculateProductionStartDate(launchDate, episodeCount);
+
+    // 4. 채용 시작일 계산 (제작 시작일 - 35일)
+    const hiringStartDate = this.calculateHiringStartDate(productionStartDate);
+
+    // 5. 기획 시작일 계산 (채용 시작일 - 56일)
+    const planningStartDate = this.calculatePlanningStartDate(hiringStartDate);
+
+    // 6. 회차별 스케줄 생성
+    const episodes = this.generateEpisodeSchedules(productionStartDate, episodeCount);
+
+    // 7. 마일스톤 생성
+    const milestones = this.generateMilestones(launchDate, episodeCount);
+
+    return {
+      launchDate: new Date(launchDate),
+      sealDate,
+      productionStartDate,
+      hiringStartDate,
+      planningStartDate,
+      totalProductionDays,
+      episodes,
+      milestones,
+    };
   }
 }

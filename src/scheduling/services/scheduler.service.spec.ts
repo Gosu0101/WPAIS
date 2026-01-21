@@ -527,4 +527,124 @@ describe('SchedulerService', () => {
     });
   });
 
+  describe('calculateMasterSchedule', () => {
+    it('should return a complete MasterSchedule object for 10 episodes', () => {
+      const launchDate = new Date('2027-01-31');
+      const masterSchedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      
+      // Verify all required fields are present
+      expect(masterSchedule.launchDate).toBeDefined();
+      expect(masterSchedule.sealDate).toBeDefined();
+      expect(masterSchedule.productionStartDate).toBeDefined();
+      expect(masterSchedule.hiringStartDate).toBeDefined();
+      expect(masterSchedule.planningStartDate).toBeDefined();
+      expect(masterSchedule.totalProductionDays).toBeDefined();
+      expect(masterSchedule.episodes).toBeDefined();
+      expect(masterSchedule.milestones).toBeDefined();
+    });
+
+    it('should calculate correct dates for 10 episodes', () => {
+      const launchDate = new Date('2027-01-31');
+      const masterSchedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      
+      // Verify launch date
+      expect(masterSchedule.launchDate.getTime()).toBe(launchDate.getTime());
+      
+      // Verify seal date (launch - 30 days)
+      expect(masterSchedule.sealDate).toEqual(new Date('2027-01-01'));
+      
+      // Verify total production days (10 × 14 = 140)
+      expect(masterSchedule.totalProductionDays).toBe(140);
+      
+      // Verify production start date (seal - 140 days = 2026-08-14)
+      expect(masterSchedule.productionStartDate).toEqual(new Date('2026-08-14'));
+      
+      // Verify hiring start date (production - 35 days = 2026-07-10)
+      expect(masterSchedule.hiringStartDate).toEqual(new Date('2026-07-10'));
+      
+      // Verify planning start date (hiring - 56 days = 2026-05-15)
+      expect(masterSchedule.planningStartDate).toEqual(new Date('2026-05-15'));
+    });
+
+    it('should generate correct number of episodes', () => {
+      const launchDate = new Date('2027-01-31');
+      
+      const schedule10 = schedulerService.calculateMasterSchedule(launchDate, 10);
+      expect(schedule10.episodes).toHaveLength(10);
+      
+      const schedule15 = schedulerService.calculateMasterSchedule(launchDate, 15);
+      expect(schedule15.episodes).toHaveLength(15);
+    });
+
+    it('should generate correct milestones', () => {
+      const launchDate = new Date('2027-01-31');
+      const masterSchedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      
+      // Should have 7 milestones for 10 episodes
+      expect(masterSchedule.milestones).toHaveLength(7);
+      
+      const types = masterSchedule.milestones.map(m => m.type);
+      expect(types).toContain(MilestoneType.PLANNING_COMPLETE);
+      expect(types).toContain(MilestoneType.HIRING_COMPLETE);
+      expect(types).toContain(MilestoneType.PRODUCTION_START);
+      expect(types).toContain(MilestoneType.EPISODE_3_COMPLETE);
+      expect(types).toContain(MilestoneType.EPISODE_5_COMPLETE);
+      expect(types).toContain(MilestoneType.EPISODE_7_SEAL);
+      expect(types).toContain(MilestoneType.LAUNCH);
+    });
+
+    it('should use default episode count of 10 when not specified', () => {
+      const launchDate = new Date('2027-01-31');
+      const masterSchedule = schedulerService.calculateMasterSchedule(launchDate);
+      
+      expect(masterSchedule.episodes).toHaveLength(10);
+      expect(masterSchedule.totalProductionDays).toBe(140);
+    });
+
+    it('should throw error for invalid episode count', () => {
+      const launchDate = new Date('2027-01-31');
+      
+      expect(() => schedulerService.calculateMasterSchedule(launchDate, 0)).toThrow();
+      expect(() => schedulerService.calculateMasterSchedule(launchDate, -1)).toThrow();
+    });
+
+    it('should not mutate the original launch date', () => {
+      const launchDate = new Date('2027-01-31');
+      const originalTime = launchDate.getTime();
+      
+      schedulerService.calculateMasterSchedule(launchDate, 10);
+      
+      expect(launchDate.getTime()).toBe(originalTime);
+    });
+
+    it('should maintain date ordering: planning < hiring < production < seal < launch', () => {
+      const launchDate = new Date('2027-01-31');
+      const masterSchedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      
+      expect(masterSchedule.planningStartDate.getTime()).toBeLessThan(masterSchedule.hiringStartDate.getTime());
+      expect(masterSchedule.hiringStartDate.getTime()).toBeLessThan(masterSchedule.productionStartDate.getTime());
+      expect(masterSchedule.productionStartDate.getTime()).toBeLessThan(masterSchedule.sealDate.getTime());
+      expect(masterSchedule.sealDate.getTime()).toBeLessThan(masterSchedule.launchDate.getTime());
+    });
+
+    it('should have first episode start on production start date', () => {
+      const launchDate = new Date('2027-01-31');
+      const masterSchedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      
+      expect(masterSchedule.episodes[0].startDate.getTime()).toBe(masterSchedule.productionStartDate.getTime());
+    });
+
+    it('should calculate correct total production days for mixed periods', () => {
+      const launchDate = new Date('2027-01-31');
+      
+      // 12 episodes: 10 × 14 + 2 × 7 = 140 + 14 = 154 days
+      const schedule12 = schedulerService.calculateMasterSchedule(launchDate, 12);
+      expect(schedule12.totalProductionDays).toBe(154);
+      
+      // 15 episodes: 10 × 14 + 5 × 7 = 140 + 35 = 175 days
+      const schedule15 = schedulerService.calculateMasterSchedule(launchDate, 15);
+      expect(schedule15.totalProductionDays).toBe(175);
+    });
+  });
+
 });

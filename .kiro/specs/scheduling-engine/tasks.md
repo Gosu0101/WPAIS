@@ -114,11 +114,11 @@ WPAIS 스케줄링 엔진 모듈의 구현 계획입니다. NestJS와 TypeORM을
     - **Property 9: Seal Milestone Date Consistency**
     - **Validates: Requirements 5.4**
 
-- [ ] 9. Checkpoint - 스케줄 생성 로직 완료
+- [x] 9. Checkpoint - 스케줄 생성 로직 완료
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. calculateMasterSchedule 통합 구현
-  - [ ] 10.1 calculateMasterSchedule 메서드 구현
+- [x] 10. calculateMasterSchedule 통합 구현
+  - [x] 10.1 calculateMasterSchedule 메서드 구현
     - 모든 계산 로직 통합
     - MasterSchedule 객체 반환
     - _Requirements: 1.2, 1.4, 3.2, 3.3_
