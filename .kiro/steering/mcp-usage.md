@@ -21,5 +21,6 @@
 
 ## 프로젝트 정보
 - GitHub: https://github.com/Gosu0101/WPAIS
+- GitHub 기본 브랜치: `master`
 - Notion: https://www.notion.so/wpais-2ee957a244d2802a92b2ca7950727db1
 - DB: wpais_db (PostgreSQL)

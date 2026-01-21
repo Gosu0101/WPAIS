@@ -2,6 +2,7 @@ import * as fc from 'fast-check';
 import { SchedulerService } from './scheduler.service';
 import { VelocityConfigService } from './velocity-config.service';
 import { MilestoneType } from '../entities';
+import { InsufficientTimeError } from '../errors';
 
 describe('SchedulerService', () => {
   let schedulerService: SchedulerService;
@@ -644,6 +645,319 @@ describe('SchedulerService', () => {
       // 15 episodes: 10 × 14 + 5 × 7 = 140 + 35 = 175 days
       const schedule15 = schedulerService.calculateMasterSchedule(launchDate, 15);
       expect(schedule15.totalProductionDays).toBe(175);
+    });
+  });
+
+  describe('validateSchedule', () => {
+    it('should return valid result for future production start date', () => {
+      // Launch date far in the future
+      const launchDate = new Date('2030-01-31');
+      const schedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      const currentDate = new Date('2025-01-01');
+      
+      const result = schedulerService.validateSchedule(schedule, currentDate);
+      
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('should return error when production start date is in the past', () => {
+      // Launch date that results in past production start
+      const launchDate = new Date('2025-06-01');
+      const schedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      const currentDate = new Date('2025-01-01');
+      
+      const result = schedulerService.validateSchedule(schedule, currentDate);
+      
+      expect(result.isValid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toContain('Insufficient time');
+    });
+
+    it('should return error when production start date equals current date', () => {
+      const launchDate = new Date('2027-01-31');
+      const schedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      // Set current date to exactly the production start date
+      const currentDate = new Date(schedule.productionStartDate);
+      
+      const result = schedulerService.validateSchedule(schedule, currentDate);
+      
+      expect(result.isValid).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+    });
+
+    it('should detect milestone date conflicts and return warnings', () => {
+      const launchDate = new Date('2027-01-31');
+      const schedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      const currentDate = new Date('2025-01-01');
+      
+      const result = schedulerService.validateSchedule(schedule, currentDate);
+      
+      // Hiring complete and production start are on the same date (this is normal)
+      // So we should not have warnings for this specific case
+      const conflictWarnings = result.warnings.filter(w => w.code === 'MILESTONE_DATE_CONFLICT');
+      // The hiring complete and production start being on same date is expected
+      expect(conflictWarnings.length).toBe(0);
+    });
+
+    it('should use current date as default when not provided', () => {
+      // Launch date far in the future
+      const launchDate = new Date('2050-01-31');
+      const schedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      
+      const result = schedulerService.validateSchedule(schedule);
+      
+      expect(result.isValid).toBe(true);
+    });
+
+    /**
+     * Feature: scheduling-engine, Property 10: Schedule Validation - Future Start Date
+     * 
+     * *For any* schedule calculation with a launch date that results in a past
+     * production start date, the validation SHALL return an error.
+     * 
+     * **Validates: Requirements 6.1, 6.2**
+     */
+    it('should return error for any schedule with past production start date (Property 10)', () => {
+      fc.assert(
+        fc.property(
+          // Generate a launch date
+          fc.date({ min: new Date('2025-01-01'), max: new Date('2100-12-31') }).filter(d => !isNaN(d.getTime())),
+          fc.integer({ min: 1, max: 50 }),
+          // Generate a current date that is after the production start date
+          fc.integer({ min: 1, max: 365 }), // Days to add to production start date
+          (launchDate: Date, episodeCount: number, daysAfterStart: number) => {
+            const schedule = schedulerService.calculateMasterSchedule(launchDate, episodeCount);
+            
+            // Set current date to be after the production start date
+            const currentDate = new Date(schedule.productionStartDate);
+            currentDate.setDate(currentDate.getDate() + daysAfterStart);
+            
+            const result = schedulerService.validateSchedule(schedule, currentDate);
+            
+            // Should be invalid because production start is in the past
+            expect(result.isValid).toBe(false);
+            expect(result.errors.length).toBeGreaterThan(0);
+            expect(result.errors.some(e => e.includes('Insufficient time'))).toBe(true);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    /**
+     * Feature: scheduling-engine, Property 10 (Complement): Valid Schedule for Future Start Date
+     * 
+     * *For any* schedule calculation with a launch date that results in a future
+     * production start date, the validation SHALL return valid.
+     * 
+     * **Validates: Requirements 6.1, 6.2**
+     */
+    it('should return valid for any schedule with future production start date (Property 10 complement)', () => {
+      fc.assert(
+        fc.property(
+          // Generate a launch date
+          fc.date({ min: new Date('2025-01-01'), max: new Date('2100-12-31') }).filter(d => !isNaN(d.getTime())),
+          fc.integer({ min: 1, max: 50 }),
+          // Generate a current date that is before the production start date
+          fc.integer({ min: 1, max: 365 }), // Days to subtract from production start date
+          (launchDate: Date, episodeCount: number, daysBeforeStart: number) => {
+            const schedule = schedulerService.calculateMasterSchedule(launchDate, episodeCount);
+            
+            // Set current date to be before the production start date
+            const currentDate = new Date(schedule.productionStartDate);
+            currentDate.setDate(currentDate.getDate() - daysBeforeStart);
+            
+            const result = schedulerService.validateSchedule(schedule, currentDate);
+            
+            // Should be valid because production start is in the future
+            expect(result.isValid).toBe(true);
+            expect(result.errors).toHaveLength(0);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('validateScheduleOrThrow', () => {
+    it('should not throw for valid schedule', () => {
+      const launchDate = new Date('2030-01-31');
+      const schedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      const currentDate = new Date('2025-01-01');
+      
+      expect(() => schedulerService.validateScheduleOrThrow(schedule, currentDate)).not.toThrow();
+    });
+
+    it('should throw InsufficientTimeError when production start is in the past', () => {
+      const launchDate = new Date('2025-06-01');
+      const schedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      const currentDate = new Date('2025-01-01');
+      
+      expect(() => schedulerService.validateScheduleOrThrow(schedule, currentDate))
+        .toThrow(InsufficientTimeError);
+    });
+
+    it('should include correct dates in InsufficientTimeError', () => {
+      const launchDate = new Date('2025-06-01');
+      const schedule = schedulerService.calculateMasterSchedule(launchDate, 10);
+      const currentDate = new Date('2025-01-01');
+      
+      try {
+        schedulerService.validateScheduleOrThrow(schedule, currentDate);
+        fail('Expected InsufficientTimeError to be thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(InsufficientTimeError);
+        const insufficientError = error as InsufficientTimeError;
+        expect(insufficientError.launchDate.getTime()).toBe(schedule.launchDate.getTime());
+        expect(insufficientError.calculatedStartDate.getTime()).toBe(schedule.productionStartDate.getTime());
+        expect(insufficientError.currentDate.getTime()).toBe(currentDate.getTime());
+      }
+    });
+  });
+
+  describe('recalculateSchedule', () => {
+    it('should recalculate all dates when launch date changes', () => {
+      const originalLaunchDate = new Date('2027-01-31');
+      const originalSchedule = schedulerService.calculateMasterSchedule(originalLaunchDate, 10);
+      
+      const newLaunchDate = new Date('2027-03-31');
+      const recalculatedSchedule = schedulerService.recalculateSchedule(originalSchedule, newLaunchDate);
+      
+      // Verify launch date is updated
+      expect(recalculatedSchedule.launchDate.getTime()).toBe(newLaunchDate.getTime());
+      
+      // Verify seal date is updated (new launch - 30 days)
+      const expectedSealDate = new Date('2027-03-01');
+      expect(recalculatedSchedule.sealDate.getTime()).toBe(expectedSealDate.getTime());
+      
+      // Verify episode count is preserved
+      expect(recalculatedSchedule.episodes.length).toBe(originalSchedule.episodes.length);
+    });
+
+    it('should preserve episode count when recalculating', () => {
+      const originalLaunchDate = new Date('2027-01-31');
+      const originalSchedule = schedulerService.calculateMasterSchedule(originalLaunchDate, 15);
+      
+      const newLaunchDate = new Date('2027-06-30');
+      const recalculatedSchedule = schedulerService.recalculateSchedule(originalSchedule, newLaunchDate);
+      
+      expect(recalculatedSchedule.episodes.length).toBe(15);
+      expect(recalculatedSchedule.totalProductionDays).toBe(originalSchedule.totalProductionDays);
+    });
+
+    it('should update all milestone dates proportionally', () => {
+      const originalLaunchDate = new Date('2027-01-31');
+      const originalSchedule = schedulerService.calculateMasterSchedule(originalLaunchDate, 10);
+      
+      const newLaunchDate = new Date('2027-03-02'); // 30 days later
+      const recalculatedSchedule = schedulerService.recalculateSchedule(originalSchedule, newLaunchDate);
+      
+      // All dates should shift by 30 days
+      const daysDiff = 30;
+      
+      const originalSealTime = originalSchedule.sealDate.getTime();
+      const newSealTime = recalculatedSchedule.sealDate.getTime();
+      expect(Math.round((newSealTime - originalSealTime) / (1000 * 60 * 60 * 24))).toBe(daysDiff);
+      
+      const originalProdStartTime = originalSchedule.productionStartDate.getTime();
+      const newProdStartTime = recalculatedSchedule.productionStartDate.getTime();
+      expect(Math.round((newProdStartTime - originalProdStartTime) / (1000 * 60 * 60 * 24))).toBe(daysDiff);
+    });
+
+    it('should throw error for schedule with no episodes', () => {
+      const emptySchedule: any = {
+        launchDate: new Date('2027-01-31'),
+        sealDate: new Date('2027-01-01'),
+        productionStartDate: new Date('2026-08-14'),
+        hiringStartDate: new Date('2026-07-10'),
+        planningStartDate: new Date('2026-05-15'),
+        totalProductionDays: 0,
+        episodes: [],
+        milestones: [],
+      };
+      
+      expect(() => schedulerService.recalculateSchedule(emptySchedule, new Date('2027-06-30'))).toThrow();
+    });
+
+    /**
+     * Feature: scheduling-engine, Property 11: Recalculation Consistency
+     * 
+     * *For any* project, updating the launch date and recalculating SHALL:
+     * - Update all milestone dates proportionally
+     * - Update all episode due dates proportionally
+     * - Preserve the velocity configuration
+     * 
+     * **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
+     */
+    it('should maintain recalculation consistency for any valid inputs (Property 11)', () => {
+      fc.assert(
+        fc.property(
+          // Original launch date
+          fc.date({ min: new Date('2025-01-01'), max: new Date('2050-12-31') }).filter(d => !isNaN(d.getTime())),
+          // Episode count
+          fc.integer({ min: 1, max: 50 }),
+          // Days to shift (positive = later, negative = earlier)
+          fc.integer({ min: -365, max: 365 }),
+          (originalLaunchDate: Date, episodeCount: number, daysShift: number) => {
+            // Create original schedule
+            const originalSchedule = schedulerService.calculateMasterSchedule(originalLaunchDate, episodeCount);
+            
+            // Calculate new launch date
+            const newLaunchDate = new Date(originalLaunchDate);
+            newLaunchDate.setDate(newLaunchDate.getDate() + daysShift);
+            
+            // Recalculate schedule
+            const recalculatedSchedule = schedulerService.recalculateSchedule(originalSchedule, newLaunchDate);
+            
+            // Property 7.1: All milestone dates should be updated
+            expect(recalculatedSchedule.launchDate.getTime()).toBe(newLaunchDate.getTime());
+            
+            // Verify seal date is correctly calculated from new launch date
+            const expectedSealDate = schedulerService.calculateSealDate(newLaunchDate);
+            expect(recalculatedSchedule.sealDate.getTime()).toBe(expectedSealDate.getTime());
+            
+            // Property 7.2: All episode due dates should be updated
+            expect(recalculatedSchedule.episodes.length).toBe(originalSchedule.episodes.length);
+            
+            // Verify episode due dates are recalculated correctly
+            const expectedEpisodes = schedulerService.generateEpisodeSchedules(
+              recalculatedSchedule.productionStartDate,
+              episodeCount
+            );
+            for (let i = 0; i < episodeCount; i++) {
+              expect(recalculatedSchedule.episodes[i].dueDate.getTime())
+                .toBe(expectedEpisodes[i].dueDate.getTime());
+            }
+            
+            // Property 7.3: Velocity configuration should be preserved
+            // This is verified by checking that durations remain the same
+            for (let i = 0; i < episodeCount; i++) {
+              expect(recalculatedSchedule.episodes[i].duration)
+                .toBe(originalSchedule.episodes[i].duration);
+              expect(recalculatedSchedule.episodes[i].isLearningPeriod)
+                .toBe(originalSchedule.episodes[i].isLearningPeriod);
+            }
+            
+            // Property 7.4: Total production days should remain the same
+            expect(recalculatedSchedule.totalProductionDays).toBe(originalSchedule.totalProductionDays);
+            
+            // Verify milestone count is preserved
+            expect(recalculatedSchedule.milestones.length).toBe(originalSchedule.milestones.length);
+            
+            // Verify date ordering is maintained
+            expect(recalculatedSchedule.planningStartDate.getTime())
+              .toBeLessThan(recalculatedSchedule.hiringStartDate.getTime());
+            expect(recalculatedSchedule.hiringStartDate.getTime())
+              .toBeLessThan(recalculatedSchedule.productionStartDate.getTime());
+            expect(recalculatedSchedule.productionStartDate.getTime())
+              .toBeLessThan(recalculatedSchedule.sealDate.getTime());
+            expect(recalculatedSchedule.sealDate.getTime())
+              .toBeLessThan(recalculatedSchedule.launchDate.getTime());
+          }
+        ),
+        { numRuns: 100 }
+      );
     });
   });
 

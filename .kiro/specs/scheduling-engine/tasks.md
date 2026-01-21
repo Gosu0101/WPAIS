@@ -123,28 +123,28 @@ WPAIS 스케줄링 엔진 모듈의 구현 계획입니다. NestJS와 TypeORM을
     - MasterSchedule 객체 반환
     - _Requirements: 1.2, 1.4, 3.2, 3.3_
 
-- [ ] 11. 일정 유효성 검증 구현
-  - [ ] 11.1 validateSchedule 메서드 구현
+- [x] 11. 일정 유효성 검증 구현
+  - [x] 11.1 validateSchedule 메서드 구현
     - 제작 시작일이 미래인지 검증
     - 마일스톤 날짜 충돌 검사
     - _Requirements: 6.1, 6.2, 6.3, 6.4_
 
-  - [ ] 11.2 Property test: Schedule validation
+  - [x] 11.2 Property test: Schedule validation
     - **Property 10: Schedule Validation - Future Start Date**
     - **Validates: Requirements 6.1, 6.2**
 
-  - [ ] 11.3 에러 클래스 구현
+  - [x] 11.3 에러 클래스 구현
     - InsufficientTimeError
     - InvalidEpisodeNumberError
     - _Requirements: 6.2_
 
-- [ ] 12. 일정 재계산 구현
-  - [ ] 12.1 recalculateSchedule 메서드 구현
+- [x] 12. 일정 재계산 구현
+  - [x] 12.1 recalculateSchedule 메서드 구현
     - 런칭일 변경 시 전체 일정 재계산
     - velocityConfig 보존
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-  - [ ] 12.2 Property test: Recalculation consistency
+  - [x] 12.2 Property test: Recalculation consistency
     - **Property 11: Recalculation Consistency**
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { VelocityConfigService } from './velocity-config.service';
-import { EpisodeSchedule, MasterSchedule, MilestoneSchedule } from '../types';
+import { EpisodeSchedule, MasterSchedule, MilestoneSchedule, ValidationResult, ValidationWarning } from '../types';
 import { MilestoneType } from '../entities';
+import { InsufficientTimeError } from '../errors';
 
 /**
  * SchedulerService - 스케줄링의 핵심 로직을 담당하는 메인 서비스
@@ -260,5 +261,132 @@ export class SchedulerService {
       episodes,
       milestones,
     };
+  }
+
+  /**
+   * 계산된 일정의 유효성을 검증합니다.
+   * 
+   * 검증 항목:
+   * 1. 제작 시작일이 미래인지 확인
+   * 2. 모든 마일스톤 날짜가 유효한 제작 기간 내에 있는지 확인
+   * 3. 마일스톤 날짜 충돌 검사
+   * 
+   * @param schedule 검증할 스케줄
+   * @param currentDate 현재 날짜 (기본값: 오늘)
+   * @returns 유효성 검증 결과
+   */
+  validateSchedule(schedule: MasterSchedule, currentDate: Date = new Date()): ValidationResult {
+    const errors: string[] = [];
+    const warnings: ValidationWarning[] = [];
+
+    // 1. 제작 시작일이 미래인지 검증 (Requirements 6.1, 6.2)
+    if (schedule.productionStartDate.getTime() <= currentDate.getTime()) {
+      errors.push(
+        `Insufficient time: Production would need to start on ${schedule.productionStartDate.toISOString()}, ` +
+        `but current date is ${currentDate.toISOString()}.`
+      );
+    }
+
+    // 2. 모든 마일스톤 날짜가 유효한 제작 기간 내에 있는지 확인 (Requirements 6.3)
+    const validPeriodStart = schedule.planningStartDate;
+    const validPeriodEnd = schedule.launchDate;
+
+    for (const milestone of schedule.milestones) {
+      if (milestone.targetDate.getTime() < validPeriodStart.getTime()) {
+        errors.push(
+          `Milestone "${milestone.name}" target date ${milestone.targetDate.toISOString()} ` +
+          `is before the planning start date ${validPeriodStart.toISOString()}.`
+        );
+      }
+      if (milestone.targetDate.getTime() > validPeriodEnd.getTime()) {
+        errors.push(
+          `Milestone "${milestone.name}" target date ${milestone.targetDate.toISOString()} ` +
+          `is after the launch date ${validPeriodEnd.toISOString()}.`
+        );
+      }
+    }
+
+    // 3. 마일스톤 날짜 충돌 검사 (Requirements 6.4)
+    const milestonesByDate = new Map<number, MilestoneSchedule[]>();
+    for (const milestone of schedule.milestones) {
+      const dateKey = milestone.targetDate.getTime();
+      if (!milestonesByDate.has(dateKey)) {
+        milestonesByDate.set(dateKey, []);
+      }
+      milestonesByDate.get(dateKey)!.push(milestone);
+    }
+
+    for (const [dateKey, milestones] of milestonesByDate) {
+      if (milestones.length > 1) {
+        // 채용 완료와 제작 시작은 같은 날짜일 수 있음 (정상적인 케이스)
+        const isNormalConflict = milestones.every(
+          m => m.type === MilestoneType.HIRING_COMPLETE || m.type === MilestoneType.PRODUCTION_START
+        );
+        
+        if (!isNormalConflict) {
+          warnings.push({
+            code: 'MILESTONE_DATE_CONFLICT',
+            message: `Multiple milestones on the same date: ${milestones.map(m => m.name).join(', ')}`,
+            dates: [new Date(dateKey)],
+          });
+        }
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings,
+    };
+  }
+
+  /**
+   * 일정 유효성을 검증하고, 유효하지 않으면 에러를 throw합니다.
+   * 
+   * @param schedule 검증할 스케줄
+   * @param currentDate 현재 날짜 (기본값: 오늘)
+   * @throws InsufficientTimeError 제작 시작일이 과거인 경우
+   */
+  validateScheduleOrThrow(schedule: MasterSchedule, currentDate: Date = new Date()): void {
+    const result = this.validateSchedule(schedule, currentDate);
+    
+    if (!result.isValid) {
+      // 제작 시작일이 과거인 경우 InsufficientTimeError throw
+      if (schedule.productionStartDate.getTime() <= currentDate.getTime()) {
+        throw new InsufficientTimeError(
+          schedule.launchDate,
+          schedule.productionStartDate,
+          currentDate
+        );
+      }
+      
+      // 그 외의 에러는 일반 Error로 throw
+      throw new Error(result.errors.join('\n'));
+    }
+  }
+
+  /**
+   * 런칭일 변경 시 전체 일정을 재계산합니다.
+   * 
+   * 기존 스케줄의 velocityConfig를 보존하면서 새로운 런칭일을 기준으로
+   * 모든 마일스톤 날짜와 회차별 마감일을 재계산합니다.
+   * 
+   * @param existingSchedule 기존 마스터 스케줄
+   * @param newLaunchDate 새로운 런칭일
+   * @returns 재계산된 마스터 스케줄
+   * 
+   * **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
+   */
+  recalculateSchedule(existingSchedule: MasterSchedule, newLaunchDate: Date): MasterSchedule {
+    // 기존 스케줄의 회차 수를 보존
+    const episodeCount = existingSchedule.episodes.length;
+    
+    if (episodeCount < 1) {
+      throw new Error(`Invalid episode count: ${episodeCount}. Episode count must be a positive integer.`);
+    }
+
+    // velocityConfig는 VelocityConfigService에서 관리되므로 자동으로 보존됨
+    // 새로운 런칭일로 전체 스케줄 재계산
+    return this.calculateMasterSchedule(newLaunchDate, episodeCount);
   }
 }
