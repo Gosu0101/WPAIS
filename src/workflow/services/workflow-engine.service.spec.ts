@@ -327,4 +327,230 @@ describe('WorkflowEngineService', () => {
       );
     });
   });
+
+  describe('Property 3: Auto-Unlock Chain', () => {
+    /**
+     * Feature: workflow-engine, Property 3: Auto-Unlock Chain
+     * For any Page, when a task of type T completes (status → DONE):
+     * - The immediate successor task SHALL automatically transition from LOCKED to READY
+     * - POST_PROCESSING has no successor, so no unlock occurs
+     * 
+     * Auto-unlock chain:
+     * - BACKGROUND DONE → LINE_ART becomes READY
+     * - LINE_ART DONE → COLORING becomes READY
+     * - COLORING DONE → POST_PROCESSING becomes READY
+     * 
+     * Validates: Requirements 4.1, 4.2, 4.3, 4.4
+     */
+
+    // TaskTypes that have successors (all except POST_PROCESSING)
+    const taskTypesWithSuccessors: [TaskType, TaskType][] = [
+      [TaskType.BACKGROUND, TaskType.LINE_ART],
+      [TaskType.LINE_ART, TaskType.COLORING],
+      [TaskType.COLORING, TaskType.POST_PROCESSING],
+    ];
+
+    it('should unlock LINE_ART when BACKGROUND completes', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.uuid(),
+          fc.integer({ min: 1, max: 5 }),
+          (pageId: string, episodeId: string, pageNumber: number) => {
+            const page = createTestPage({
+              id: pageId,
+              episodeId,
+              pageNumber,
+              backgroundStatus: TaskStatus.DONE,
+              lineArtStatus: TaskStatus.LOCKED,
+            });
+
+            const result = service.unlockNextTask(page, TaskType.BACKGROUND);
+
+            expect(result.lineArtStatus).toBe(TaskStatus.READY);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should unlock COLORING when LINE_ART completes', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.uuid(),
+          fc.integer({ min: 1, max: 5 }),
+          (pageId: string, episodeId: string, pageNumber: number) => {
+            const page = createTestPage({
+              id: pageId,
+              episodeId,
+              pageNumber,
+              backgroundStatus: TaskStatus.DONE,
+              lineArtStatus: TaskStatus.DONE,
+              coloringStatus: TaskStatus.LOCKED,
+            });
+
+            const result = service.unlockNextTask(page, TaskType.LINE_ART);
+
+            expect(result.coloringStatus).toBe(TaskStatus.READY);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should unlock POST_PROCESSING when COLORING completes', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.uuid(),
+          fc.integer({ min: 1, max: 5 }),
+          (pageId: string, episodeId: string, pageNumber: number) => {
+            const page = createTestPage({
+              id: pageId,
+              episodeId,
+              pageNumber,
+              backgroundStatus: TaskStatus.DONE,
+              lineArtStatus: TaskStatus.DONE,
+              coloringStatus: TaskStatus.DONE,
+              postProcessingStatus: TaskStatus.LOCKED,
+            });
+
+            const result = service.unlockNextTask(page, TaskType.COLORING);
+
+            expect(result.postProcessingStatus).toBe(TaskStatus.READY);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should not change anything when POST_PROCESSING completes (no successor)', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.uuid(),
+          fc.integer({ min: 1, max: 5 }),
+          (pageId: string, episodeId: string, pageNumber: number) => {
+            const page = createTestPage({
+              id: pageId,
+              episodeId,
+              pageNumber,
+              backgroundStatus: TaskStatus.DONE,
+              lineArtStatus: TaskStatus.DONE,
+              coloringStatus: TaskStatus.DONE,
+              postProcessingStatus: TaskStatus.DONE,
+            });
+
+            const result = service.unlockNextTask(page, TaskType.POST_PROCESSING);
+
+            // All statuses should remain unchanged
+            expect(result.backgroundStatus).toBe(TaskStatus.DONE);
+            expect(result.lineArtStatus).toBe(TaskStatus.DONE);
+            expect(result.coloringStatus).toBe(TaskStatus.DONE);
+            expect(result.postProcessingStatus).toBe(TaskStatus.DONE);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should only unlock LOCKED tasks (not change already READY/IN_PROGRESS/DONE)', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom(...taskTypesWithSuccessors),
+          fc.constantFrom(TaskStatus.READY, TaskStatus.IN_PROGRESS, TaskStatus.DONE),
+          fc.uuid(),
+          ([completedTask, successor]: [TaskType, TaskType], existingStatus: TaskStatus, pageId: string) => {
+            // Create page with successor already in non-LOCKED status
+            const pageOverrides: Partial<Page> = { id: pageId };
+            
+            // Set completed task to DONE
+            switch (completedTask) {
+              case TaskType.BACKGROUND:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = existingStatus;
+                break;
+              case TaskType.LINE_ART:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.DONE;
+                pageOverrides.coloringStatus = existingStatus;
+                break;
+              case TaskType.COLORING:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.DONE;
+                pageOverrides.coloringStatus = TaskStatus.DONE;
+                pageOverrides.postProcessingStatus = existingStatus;
+                break;
+            }
+
+            const page = createTestPage(pageOverrides);
+            const result = service.unlockNextTask(page, completedTask);
+
+            // Successor status should remain unchanged (not overwritten to READY)
+            switch (successor) {
+              case TaskType.LINE_ART:
+                expect(result.lineArtStatus).toBe(existingStatus);
+                break;
+              case TaskType.COLORING:
+                expect(result.coloringStatus).toBe(existingStatus);
+                break;
+              case TaskType.POST_PROCESSING:
+                expect(result.postProcessingStatus).toBe(existingStatus);
+                break;
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should enforce the complete auto-unlock chain: BACKGROUND → LINE_ART → COLORING → POST_PROCESSING', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.uuid(),
+          (pageId: string, episodeId: string) => {
+            // Start with initial page state
+            let page = createTestPage({
+              id: pageId,
+              episodeId,
+              backgroundStatus: TaskStatus.READY,
+              lineArtStatus: TaskStatus.LOCKED,
+              coloringStatus: TaskStatus.LOCKED,
+              postProcessingStatus: TaskStatus.LOCKED,
+            });
+
+            // Simulate BACKGROUND completion
+            page.backgroundStatus = TaskStatus.DONE;
+            page = service.unlockNextTask(page, TaskType.BACKGROUND);
+            expect(page.lineArtStatus).toBe(TaskStatus.READY);
+            expect(page.coloringStatus).toBe(TaskStatus.LOCKED);
+            expect(page.postProcessingStatus).toBe(TaskStatus.LOCKED);
+
+            // Simulate LINE_ART completion
+            page.lineArtStatus = TaskStatus.DONE;
+            page = service.unlockNextTask(page, TaskType.LINE_ART);
+            expect(page.coloringStatus).toBe(TaskStatus.READY);
+            expect(page.postProcessingStatus).toBe(TaskStatus.LOCKED);
+
+            // Simulate COLORING completion
+            page.coloringStatus = TaskStatus.DONE;
+            page = service.unlockNextTask(page, TaskType.COLORING);
+            expect(page.postProcessingStatus).toBe(TaskStatus.READY);
+
+            // Simulate POST_PROCESSING completion (no more unlocks)
+            page.postProcessingStatus = TaskStatus.DONE;
+            page = service.unlockNextTask(page, TaskType.POST_PROCESSING);
+            // All tasks should be DONE
+            expect(page.backgroundStatus).toBe(TaskStatus.DONE);
+            expect(page.lineArtStatus).toBe(TaskStatus.DONE);
+            expect(page.coloringStatus).toBe(TaskStatus.DONE);
+            expect(page.postProcessingStatus).toBe(TaskStatus.DONE);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
 });

@@ -52,17 +52,17 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
     - pageId, taskType, requiredPredecessor 포함
     - _Requirements: 3.1_
 
-- [ ] 6. Checkpoint - 의존성 검증 완료
+- [x] 6. Checkpoint - 의존성 검증 완료
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. 자동 잠금 해제 구현
-  - [ ] 7.1 unlockNextTask 메서드 구현
+- [x] 7. 자동 잠금 해제 구현
+  - [x] 7.1 unlockNextTask 메서드 구현
     - BACKGROUND DONE → LINE_ART를 READY로 변경
     - LINE_ART DONE → COLORING을 READY로 변경
     - COLORING DONE → POST_PROCESSING을 READY로 변경
     - _Requirements: 4.1, 4.2, 4.3_
 
-  - [ ] 7.2 Property test: Auto-unlock chain
+  - [x] 7.2 Property test: Auto-unlock chain
     - **Property 3: Auto-Unlock Chain**
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
 

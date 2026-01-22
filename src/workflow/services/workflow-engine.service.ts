@@ -1,7 +1,18 @@
 import { Injectable } from '@nestjs/common';
-import { TaskStatus, TaskType, TASK_DEPENDENCY_CHAIN, isValidTransition } from '../types';
+import { TaskStatus, TaskType, TASK_DEPENDENCY_CHAIN, TASK_TYPE_ORDER, isValidTransition } from '../types';
 import { InvalidStateTransitionError, LockedException } from '../errors';
 import { Page } from '../entities/page.entity';
+
+/**
+ * 후속 작업 체인 정의
+ * 각 TaskType 완료 시 자동으로 잠금 해제할 다음 작업
+ */
+const TASK_SUCCESSOR_CHAIN: Record<TaskType, TaskType | null> = {
+  [TaskType.BACKGROUND]: TaskType.LINE_ART,
+  [TaskType.LINE_ART]: TaskType.COLORING,
+  [TaskType.COLORING]: TaskType.POST_PROCESSING,
+  [TaskType.POST_PROCESSING]: null,
+};
 
 /**
  * WorkflowEngineService
@@ -81,5 +92,62 @@ export class WorkflowEngineService {
       case TaskType.POST_PROCESSING:
         return page.postProcessingStatus;
     }
+  }
+
+  /**
+   * Page에서 특정 TaskType의 상태를 설정
+   * 
+   * @param page Page 엔티티
+   * @param taskType 설정할 작업 유형
+   * @param status 설정할 상태
+   */
+  private setTaskStatus(page: Page, taskType: TaskType, status: TaskStatus): void {
+    switch (taskType) {
+      case TaskType.BACKGROUND:
+        page.backgroundStatus = status;
+        break;
+      case TaskType.LINE_ART:
+        page.lineArtStatus = status;
+        break;
+      case TaskType.COLORING:
+        page.coloringStatus = status;
+        break;
+      case TaskType.POST_PROCESSING:
+        page.postProcessingStatus = status;
+        break;
+    }
+  }
+
+  /**
+   * 자동 잠금 해제 (Auto-Unlock)
+   * 완료된 작업의 다음 작업을 LOCKED에서 READY로 변경
+   * 
+   * 자동 해제 체인:
+   * - BACKGROUND DONE → LINE_ART를 READY로 변경
+   * - LINE_ART DONE → COLORING을 READY로 변경
+   * - COLORING DONE → POST_PROCESSING을 READY로 변경
+   * 
+   * @param page 대상 Page 엔티티
+   * @param completedTaskType 완료된 작업 유형
+   * @returns 업데이트된 Page (다음 작업이 없으면 그대로 반환)
+   * 
+   * Requirements: 4.1, 4.2, 4.3
+   */
+  unlockNextTask(page: Page, completedTaskType: TaskType): Page {
+    const nextTaskType = TASK_SUCCESSOR_CHAIN[completedTaskType];
+
+    // POST_PROCESSING은 마지막 작업이므로 다음 작업이 없음
+    if (nextTaskType === null) {
+      return page;
+    }
+
+    const nextTaskStatus = this.getTaskStatus(page, nextTaskType);
+
+    // 다음 작업이 LOCKED 상태인 경우에만 READY로 변경
+    if (nextTaskStatus === TaskStatus.LOCKED) {
+      this.setTaskStatus(page, nextTaskType, TaskStatus.READY);
+    }
+
+    return page;
   }
 }
