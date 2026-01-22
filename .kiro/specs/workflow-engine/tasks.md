@@ -26,13 +26,13 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
 - [x] 3. Checkpoint - Page 엔티티 완료
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 4. 상태 전이 검증 구현
-  - [ ] 4.1 validateTransition 메서드 구현
+- [x] 4. 상태 전이 검증 구현
+  - [x] 4.1 validateTransition 메서드 구현
     - LOCKED→READY, READY→IN_PROGRESS, IN_PROGRESS→DONE 허용
     - 그 외 전이는 InvalidStateTransitionError 발생
     - _Requirements: 2.3, 2.4, 2.5, 6.1, 6.2_
 
-  - [ ] 4.2 Property test: Valid state transitions
+  - [x] 4.2 Property test: Valid state transitions
     - **Property 4: Valid State Transitions Only**
     - **Validates: Requirements 2.3, 2.4, 2.5, 6.1, 6.2**
 
