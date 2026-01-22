@@ -42,3 +42,6 @@ coverage/
 # Misc
 *.pem
 *.key
+
+# Claude Code plugins (참고용 폴더)
+claude-code-main/
