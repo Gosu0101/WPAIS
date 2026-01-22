@@ -23,7 +23,7 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
     - **Property 1: Page Initialization Invariant**
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
 
-- [ ] 3. Checkpoint - Page 엔티티 완료
+- [x] 3. Checkpoint - Page 엔티티 완료
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 4. 상태 전이 검증 구현
