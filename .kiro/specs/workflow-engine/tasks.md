@@ -67,7 +67,7 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
 
 - [ ] 8. 작업 상태 변경 메서드 구현
-  - [ ] 8.1 startTask 메서드 구현
+  - [x] 8.1 startTask 메서드 구현
     - READY → IN_PROGRESS 전이
     - 의존성 검증 포함
     - _Requirements: 2.4, 3.1, 3.2, 3.3_

@@ -553,4 +553,126 @@ describe('WorkflowEngineService', () => {
       );
     });
   });
+
+  describe('startTask', () => {
+    /**
+     * startTask 메서드 단위 테스트
+     * READY → IN_PROGRESS 전이와 의존성 검증을 수행
+     * 
+     * Requirements: 2.4, 3.1, 3.2, 3.3
+     */
+
+    it('should start BACKGROUND task when status is READY', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.READY,
+      });
+
+      const result = service.startTask(page, TaskType.BACKGROUND);
+
+      expect(result.backgroundStatus).toBe(TaskStatus.IN_PROGRESS);
+    });
+
+    it('should start LINE_ART task when BACKGROUND is DONE and LINE_ART is READY', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.READY,
+      });
+
+      const result = service.startTask(page, TaskType.LINE_ART);
+
+      expect(result.lineArtStatus).toBe(TaskStatus.IN_PROGRESS);
+    });
+
+    it('should start COLORING task when LINE_ART is DONE and COLORING is READY', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.DONE,
+        coloringStatus: TaskStatus.READY,
+      });
+
+      const result = service.startTask(page, TaskType.COLORING);
+
+      expect(result.coloringStatus).toBe(TaskStatus.IN_PROGRESS);
+    });
+
+    it('should start POST_PROCESSING task when COLORING is DONE and POST_PROCESSING is READY', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.DONE,
+        coloringStatus: TaskStatus.DONE,
+        postProcessingStatus: TaskStatus.READY,
+      });
+
+      const result = service.startTask(page, TaskType.POST_PROCESSING);
+
+      expect(result.postProcessingStatus).toBe(TaskStatus.IN_PROGRESS);
+    });
+
+    it('should throw InvalidStateTransitionError when task is LOCKED', () => {
+      const page = createTestPage({
+        lineArtStatus: TaskStatus.LOCKED,
+      });
+
+      expect(() => service.startTask(page, TaskType.LINE_ART)).toThrow(
+        InvalidStateTransitionError
+      );
+    });
+
+    it('should throw InvalidStateTransitionError when task is already IN_PROGRESS', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.IN_PROGRESS,
+      });
+
+      expect(() => service.startTask(page, TaskType.BACKGROUND)).toThrow(
+        InvalidStateTransitionError
+      );
+    });
+
+    it('should throw InvalidStateTransitionError when task is already DONE', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+      });
+
+      expect(() => service.startTask(page, TaskType.BACKGROUND)).toThrow(
+        InvalidStateTransitionError
+      );
+    });
+
+    it('should throw LockedException when LINE_ART is READY but BACKGROUND is not DONE', () => {
+      // This scenario shouldn't happen in normal workflow, but we test the validation
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.IN_PROGRESS,
+        lineArtStatus: TaskStatus.READY, // Manually set to READY for testing
+      });
+
+      expect(() => service.startTask(page, TaskType.LINE_ART)).toThrow(
+        LockedException
+      );
+    });
+
+    it('should throw LockedException when COLORING is READY but LINE_ART is not DONE', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.IN_PROGRESS,
+        coloringStatus: TaskStatus.READY, // Manually set to READY for testing
+      });
+
+      expect(() => service.startTask(page, TaskType.COLORING)).toThrow(
+        LockedException
+      );
+    });
+
+    it('should throw LockedException when POST_PROCESSING is READY but COLORING is not DONE', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.DONE,
+        coloringStatus: TaskStatus.IN_PROGRESS,
+        postProcessingStatus: TaskStatus.READY, // Manually set to READY for testing
+      });
+
+      expect(() => service.startTask(page, TaskType.POST_PROCESSING)).toThrow(
+        LockedException
+      );
+    });
+  });
 });

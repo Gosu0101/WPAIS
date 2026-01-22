@@ -119,6 +119,33 @@ export class WorkflowEngineService {
   }
 
   /**
+   * 작업 시작 (READY → IN_PROGRESS)
+   * 상태 전이 검증과 의존성 검증을 수행한 후 작업을 시작 상태로 변경
+   * 
+   * @param page 대상 Page 엔티티
+   * @param taskType 시작할 작업 유형
+   * @returns 업데이트된 Page 엔티티
+   * @throws InvalidStateTransitionError 현재 상태가 READY가 아닌 경우
+   * @throws LockedException 선행 작업이 완료되지 않은 경우
+   * 
+   * Requirements: 2.4, 3.1, 3.2, 3.3
+   */
+  startTask(page: Page, taskType: TaskType): Page {
+    const currentStatus = this.getTaskStatus(page, taskType);
+
+    // 1. 상태 전이 검증 (READY → IN_PROGRESS만 허용)
+    this.validateTransition(currentStatus, TaskStatus.IN_PROGRESS);
+
+    // 2. 의존성 검증 (선행 작업이 DONE인지 확인)
+    this.validateDependency(page, taskType);
+
+    // 3. 상태 변경
+    this.setTaskStatus(page, taskType, TaskStatus.IN_PROGRESS);
+
+    return page;
+  }
+
+  /**
    * 자동 잠금 해제 (Auto-Unlock)
    * 완료된 작업의 다음 작업을 LOCKED에서 READY로 변경
    * 
