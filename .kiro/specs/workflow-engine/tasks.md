@@ -6,20 +6,20 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
 
 ## Tasks
 
-- [ ] 1. 프로젝트 구조 및 기본 설정
+- [x] 1. 프로젝트 구조 및 기본 설정
   - workflow 모듈 디렉토리 구조 생성
   - TaskType, TaskStatus enum 정의
   - _Requirements: 2.1, 2.2_
 
-- [ ] 2. Page 엔티티 구현
-  - [ ] 2.1 Page 엔티티 정의
+- [x] 2. Page 엔티티 구현
+  - [x] 2.1 Page 엔티티 정의
     - id, episodeId, pageNumber, heightPx 필드
     - backgroundStatus, lineArtStatus, coloringStatus, postProcessingStatus 필드
     - Episode와의 관계 설정 (Many-to-One)
     - TypeORM 데코레이터 적용
     - _Requirements: 1.1, 1.4_
 
-  - [ ] 2.2 Property test: Page initialization
+  - [x] 2.2 Property test: Page initialization
     - **Property 1: Page Initialization Invariant**
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.4**
 
@@ -36,19 +36,19 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
     - **Property 4: Valid State Transitions Only**
     - **Validates: Requirements 2.3, 2.4, 2.5, 6.1, 6.2**
 
-- [ ] 5. 스테이지 퍼스트 의존성 구현
-  - [ ] 5.1 validateDependency 메서드 구현
+- [x] 5. 스테이지 퍼스트 의존성 구현
+  - [x] 5.1 validateDependency 메서드 구현
     - LINE_ART 시작 전 BACKGROUND가 DONE인지 검증
     - COLORING 시작 전 LINE_ART가 DONE인지 검증
     - POST_PROCESSING 시작 전 COLORING이 DONE인지 검증
     - 의존성 미충족 시 LockedException 발생
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-  - [ ] 5.2 Property test: Stage-first dependency
+  - [x] 5.2 Property test: Stage-first dependency
     - **Property 2: Stage-First Dependency Enforcement**
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.4**
 
-  - [ ] 5.3 LockedException 에러 클래스 구현
+  - [x] 5.3 LockedException 에러 클래스 구현
     - pageId, taskType, requiredPredecessor 포함
     - _Requirements: 3.1_
 
