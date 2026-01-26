@@ -1,6 +1,7 @@
 import * as fc from 'fast-check';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WorkflowEngineService } from './workflow-engine.service';
-import { TaskStatus, TaskType, TASK_DEPENDENCY_CHAIN } from '../types';
+import { TaskStatus, TaskType, TASK_DEPENDENCY_CHAIN, WORKFLOW_EVENTS } from '../types';
 import { InvalidStateTransitionError, LockedException } from '../errors';
 import { Page } from '../entities/page.entity';
 
@@ -23,11 +24,22 @@ function createTestPage(overrides: Partial<Page> = {}): Page {
   return Object.assign(page, overrides);
 }
 
+/**
+ * Mock EventEmitter2 생성 헬퍼
+ */
+function createMockEventEmitter(): EventEmitter2 {
+  return {
+    emit: jest.fn(),
+  } as unknown as EventEmitter2;
+}
+
 describe('WorkflowEngineService', () => {
   let service: WorkflowEngineService;
+  let mockEventEmitter: EventEmitter2;
 
   beforeEach(() => {
-    service = new WorkflowEngineService();
+    mockEventEmitter = createMockEventEmitter();
+    service = new WorkflowEngineService(mockEventEmitter);
   });
 
   describe('Property 4: Valid State Transitions Only', () => {
@@ -807,6 +819,508 @@ describe('WorkflowEngineService', () => {
       expect(page.lineArtStatus).toBe(TaskStatus.DONE);
       expect(page.coloringStatus).toBe(TaskStatus.DONE);
       expect(page.postProcessingStatus).toBe(TaskStatus.DONE);
+    });
+  });
+
+  describe('Property 6: Task Unlock Event Emission', () => {
+    /**
+     * Feature: workflow-engine, Property 6: Task Unlock Event Emission
+     * For any task status change to READY:
+     * - A TaskUnlockedEvent SHALL be emitted
+     * - The event SHALL contain valid pageId, taskType, and timestamp
+     * 
+     * Validates: Requirements 7.1, 7.2
+     */
+
+    // TaskTypes that have successors (all except POST_PROCESSING)
+    const taskTypesWithSuccessors: [TaskType, TaskType][] = [
+      [TaskType.BACKGROUND, TaskType.LINE_ART],
+      [TaskType.LINE_ART, TaskType.COLORING],
+      [TaskType.COLORING, TaskType.POST_PROCESSING],
+    ];
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should emit TaskUnlockedEvent when unlocking successor task', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom(...taskTypesWithSuccessors),
+          fc.uuid(),
+          ([completedTask, successor]: [TaskType, TaskType], pageId: string) => {
+            // Reset mock for each iteration
+            (mockEventEmitter.emit as jest.Mock).mockClear();
+
+            // Create page with successor in LOCKED status
+            const pageOverrides: Partial<Page> = { id: pageId };
+            
+            switch (completedTask) {
+              case TaskType.BACKGROUND:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.LOCKED;
+                break;
+              case TaskType.LINE_ART:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.DONE;
+                pageOverrides.coloringStatus = TaskStatus.LOCKED;
+                break;
+              case TaskType.COLORING:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.DONE;
+                pageOverrides.coloringStatus = TaskStatus.DONE;
+                pageOverrides.postProcessingStatus = TaskStatus.LOCKED;
+                break;
+            }
+
+            const page = createTestPage(pageOverrides);
+            service.unlockNextTask(page, completedTask);
+
+            // Verify event was emitted
+            expect(mockEventEmitter.emit).toHaveBeenCalledTimes(1);
+            expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+              WORKFLOW_EVENTS.TASK_UNLOCKED,
+              expect.objectContaining({
+                pageId,
+                taskType: successor,
+                timestamp: expect.any(Date),
+              })
+            );
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should NOT emit event when POST_PROCESSING completes (no successor)', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          (pageId: string) => {
+            (mockEventEmitter.emit as jest.Mock).mockClear();
+
+            const page = createTestPage({
+              id: pageId,
+              backgroundStatus: TaskStatus.DONE,
+              lineArtStatus: TaskStatus.DONE,
+              coloringStatus: TaskStatus.DONE,
+              postProcessingStatus: TaskStatus.DONE,
+            });
+
+            service.unlockNextTask(page, TaskType.POST_PROCESSING);
+
+            // No event should be emitted
+            expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should NOT emit event when successor is already unlocked (not LOCKED)', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom(...taskTypesWithSuccessors),
+          fc.constantFrom(TaskStatus.READY, TaskStatus.IN_PROGRESS, TaskStatus.DONE),
+          fc.uuid(),
+          ([completedTask, successor]: [TaskType, TaskType], existingStatus: TaskStatus, pageId: string) => {
+            (mockEventEmitter.emit as jest.Mock).mockClear();
+
+            // Create page with successor already in non-LOCKED status
+            const pageOverrides: Partial<Page> = { id: pageId };
+            
+            switch (completedTask) {
+              case TaskType.BACKGROUND:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = existingStatus;
+                break;
+              case TaskType.LINE_ART:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.DONE;
+                pageOverrides.coloringStatus = existingStatus;
+                break;
+              case TaskType.COLORING:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.DONE;
+                pageOverrides.coloringStatus = TaskStatus.DONE;
+                pageOverrides.postProcessingStatus = existingStatus;
+                break;
+            }
+
+            const page = createTestPage(pageOverrides);
+            service.unlockNextTask(page, completedTask);
+
+            // No event should be emitted since successor was not LOCKED
+            expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should emit event with correct timestamp', () => {
+      const beforeTime = new Date();
+      
+      const page = createTestPage({
+        id: 'test-page',
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.LOCKED,
+      });
+
+      service.unlockNextTask(page, TaskType.BACKGROUND);
+
+      const afterTime = new Date();
+
+      expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+        WORKFLOW_EVENTS.TASK_UNLOCKED,
+        expect.objectContaining({
+          timestamp: expect.any(Date),
+        })
+      );
+
+      const emittedEvent = (mockEventEmitter.emit as jest.Mock).mock.calls[0][1];
+      expect(emittedEvent.timestamp.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
+      expect(emittedEvent.timestamp.getTime()).toBeLessThanOrEqual(afterTime.getTime());
+    });
+
+    it('should emit event through completeTask when unlocking successor', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom(...taskTypesWithSuccessors),
+          fc.uuid(),
+          ([completedTask, successor]: [TaskType, TaskType], pageId: string) => {
+            (mockEventEmitter.emit as jest.Mock).mockClear();
+
+            // Create page with task IN_PROGRESS and successor LOCKED
+            const pageOverrides: Partial<Page> = { id: pageId };
+            
+            switch (completedTask) {
+              case TaskType.BACKGROUND:
+                pageOverrides.backgroundStatus = TaskStatus.IN_PROGRESS;
+                pageOverrides.lineArtStatus = TaskStatus.LOCKED;
+                break;
+              case TaskType.LINE_ART:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.IN_PROGRESS;
+                pageOverrides.coloringStatus = TaskStatus.LOCKED;
+                break;
+              case TaskType.COLORING:
+                pageOverrides.backgroundStatus = TaskStatus.DONE;
+                pageOverrides.lineArtStatus = TaskStatus.DONE;
+                pageOverrides.coloringStatus = TaskStatus.IN_PROGRESS;
+                pageOverrides.postProcessingStatus = TaskStatus.LOCKED;
+                break;
+            }
+
+            const page = createTestPage(pageOverrides);
+            service.completeTask(page, completedTask);
+
+            // Verify event was emitted through completeTask
+            expect(mockEventEmitter.emit).toHaveBeenCalledTimes(1);
+            expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+              WORKFLOW_EVENTS.TASK_UNLOCKED,
+              expect.objectContaining({
+                pageId,
+                taskType: successor,
+              })
+            );
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('Property 5: Episode Progress Calculation', () => {
+    /**
+     * Feature: workflow-engine, Property 5: Episode Progress Calculation
+     * For any Episode with N completed tasks (out of 20 total):
+     * - Progress percentage SHALL equal (N / 20) × 100
+     * - When N = 20, Episode status SHALL be COMPLETED
+     * 
+     * Validates: Requirements 5.1, 5.2
+     */
+
+    /**
+     * 테스트용 Page 배열 생성 헬퍼
+     * 각 페이지의 완료된 작업 수를 지정할 수 있음
+     */
+    function createTestPages(
+      episodeId: string,
+      completedTasksPerPage: number[] // 각 페이지별 완료된 작업 수 (0-4)
+    ): Page[] {
+      return completedTasksPerPage.map((completedCount, index) => {
+        const page = createTestPage({
+          id: `page-${index + 1}`,
+          episodeId,
+          pageNumber: index + 1,
+        });
+
+        // 완료된 작업 수에 따라 상태 설정 (순서대로 완료)
+        if (completedCount >= 1) page.backgroundStatus = TaskStatus.DONE;
+        if (completedCount >= 2) page.lineArtStatus = TaskStatus.DONE;
+        if (completedCount >= 3) page.coloringStatus = TaskStatus.DONE;
+        if (completedCount >= 4) page.postProcessingStatus = TaskStatus.DONE;
+
+        return page;
+      });
+    }
+
+    it('should calculate progress as (completedTasks / totalTasks) * 100', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.array(fc.integer({ min: 0, max: 4 }), { minLength: 5, maxLength: 5 }),
+          (episodeId: string, completedTasksPerPage: number[]) => {
+            const pages = createTestPages(episodeId, completedTasksPerPage);
+            const totalCompleted = completedTasksPerPage.reduce((sum, count) => sum + count, 0);
+            const expectedPercentage = (totalCompleted / 20) * 100;
+
+            const progress = service.calculateEpisodeProgress(episodeId, pages);
+
+            expect(progress.episodeId).toBe(episodeId);
+            expect(progress.totalTasks).toBe(20);
+            expect(progress.completedTasks).toBe(totalCompleted);
+            expect(progress.percentage).toBeCloseTo(expectedPercentage, 5);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should provide correct breakdown by TaskType', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.array(fc.integer({ min: 0, max: 4 }), { minLength: 5, maxLength: 5 }),
+          (episodeId: string, completedTasksPerPage: number[]) => {
+            const pages = createTestPages(episodeId, completedTasksPerPage);
+
+            // 각 TaskType별 예상 완료 수 계산
+            const expectedByType = {
+              [TaskType.BACKGROUND]: completedTasksPerPage.filter(c => c >= 1).length,
+              [TaskType.LINE_ART]: completedTasksPerPage.filter(c => c >= 2).length,
+              [TaskType.COLORING]: completedTasksPerPage.filter(c => c >= 3).length,
+              [TaskType.POST_PROCESSING]: completedTasksPerPage.filter(c => c >= 4).length,
+            };
+
+            const progress = service.calculateEpisodeProgress(episodeId, pages);
+
+            for (const taskType of Object.values(TaskType)) {
+              expect(progress.byTaskType[taskType].total).toBe(5);
+              expect(progress.byTaskType[taskType].completed).toBe(expectedByType[taskType]);
+              expect(progress.byTaskType[taskType].percentage).toBeCloseTo(
+                (expectedByType[taskType] / 5) * 100,
+                5
+              );
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should return 0% progress for empty pages array', () => {
+      const progress = service.calculateEpisodeProgress('empty-episode', []);
+
+      expect(progress.totalTasks).toBe(0);
+      expect(progress.completedTasks).toBe(0);
+      expect(progress.percentage).toBe(0);
+    });
+
+    it('should return 100% progress when all tasks are DONE', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          (episodeId: string) => {
+            const pages = createTestPages(episodeId, [4, 4, 4, 4, 4]); // All 20 tasks done
+
+            const progress = service.calculateEpisodeProgress(episodeId, pages);
+
+            expect(progress.completedTasks).toBe(20);
+            expect(progress.percentage).toBe(100);
+            
+            // All TaskTypes should be 100%
+            for (const taskType of Object.values(TaskType)) {
+              expect(progress.byTaskType[taskType].completed).toBe(5);
+              expect(progress.byTaskType[taskType].percentage).toBe(100);
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should correctly identify episode completion', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.array(fc.integer({ min: 0, max: 4 }), { minLength: 5, maxLength: 5 }),
+          (episodeId: string, completedTasksPerPage: number[]) => {
+            const pages = createTestPages(episodeId, completedTasksPerPage);
+            const allCompleted = completedTasksPerPage.every(c => c === 4);
+
+            const isCompleted = service.isEpisodeCompleted(pages);
+
+            expect(isCompleted).toBe(allCompleted);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should emit EpisodeCompletedEvent when all tasks are DONE', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          (episodeId: string) => {
+            (mockEventEmitter.emit as jest.Mock).mockClear();
+
+            const pages = createTestPages(episodeId, [4, 4, 4, 4, 4]); // All 20 tasks done
+
+            const result = service.checkAndEmitEpisodeCompleted(episodeId, pages);
+
+            expect(result).toBe(true);
+            expect(mockEventEmitter.emit).toHaveBeenCalledTimes(1);
+            expect(mockEventEmitter.emit).toHaveBeenCalledWith(
+              WORKFLOW_EVENTS.EPISODE_COMPLETED,
+              expect.objectContaining({
+                episodeId,
+                completedAt: expect.any(Date),
+              })
+            );
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should NOT emit EpisodeCompletedEvent when not all tasks are DONE', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.array(fc.integer({ min: 0, max: 3 }), { minLength: 5, maxLength: 5 }), // At least one incomplete
+          (episodeId: string, completedTasksPerPage: number[]) => {
+            (mockEventEmitter.emit as jest.Mock).mockClear();
+
+            const pages = createTestPages(episodeId, completedTasksPerPage);
+
+            const result = service.checkAndEmitEpisodeCompleted(episodeId, pages);
+
+            expect(result).toBe(false);
+            expect(mockEventEmitter.emit).not.toHaveBeenCalled();
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+  });
+
+  describe('initializePages', () => {
+    /**
+     * initializePages 메서드 단위 테스트
+     * Episode 생성 시 5개 Page 자동 생성
+     * 
+     * Requirements: 1.1, 1.3
+     */
+
+    it('should create 5 pages by default', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          (episodeId: string) => {
+            const pages = service.initializePages(episodeId);
+
+            expect(pages.length).toBe(5);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should create pages with sequential page numbers (1-5)', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          (episodeId: string) => {
+            const pages = service.initializePages(episodeId);
+
+            const pageNumbers = pages.map(p => p.pageNumber).sort((a, b) => a - b);
+            expect(pageNumbers).toEqual([1, 2, 3, 4, 5]);
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should initialize all pages with correct initial status', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          (episodeId: string) => {
+            const pages = service.initializePages(episodeId);
+
+            pages.forEach(page => {
+              expect(page.backgroundStatus).toBe(TaskStatus.READY);
+              expect(page.lineArtStatus).toBe(TaskStatus.LOCKED);
+              expect(page.coloringStatus).toBe(TaskStatus.LOCKED);
+              expect(page.postProcessingStatus).toBe(TaskStatus.LOCKED);
+            });
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should set height to 20,000px for all pages', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          (episodeId: string) => {
+            const pages = service.initializePages(episodeId);
+
+            pages.forEach(page => {
+              expect(page.heightPx).toBe(20000);
+            });
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should set episodeId for all pages', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          (episodeId: string) => {
+            const pages = service.initializePages(episodeId);
+
+            pages.forEach(page => {
+              expect(page.episodeId).toBe(episodeId);
+            });
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should create custom number of pages when specified', () => {
+      fc.assert(
+        fc.property(
+          fc.uuid(),
+          fc.integer({ min: 1, max: 10 }),
+          (episodeId: string, count: number) => {
+            const pages = service.initializePages(episodeId, count);
+
+            expect(pages.length).toBe(count);
+            
+            const pageNumbers = pages.map(p => p.pageNumber).sort((a, b) => a - b);
+            const expectedNumbers = Array.from({ length: count }, (_, i) => i + 1);
+            expect(pageNumbers).toEqual(expectedNumbers);
+          }
+        ),
+        { numRuns: 100 }
+      );
     });
   });
 });

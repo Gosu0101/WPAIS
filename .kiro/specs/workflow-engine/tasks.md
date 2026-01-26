@@ -77,64 +77,64 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
     - 자동 잠금 해제 트리거
     - _Requirements: 2.5, 4.1, 4.2, 4.3_
 
-- [ ] 9. Checkpoint - 핵심 워크플로우 완료
+- [x] 9. Checkpoint - 핵심 워크플로우 완료
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. 이벤트 시스템 구현
-  - [ ] 10.1 TaskUnlockedEvent 및 EpisodeCompletedEvent 타입 정의
+  - [x] 10.1 TaskUnlockedEvent 및 EpisodeCompletedEvent 타입 정의
     - pageId, taskType, timestamp 필드 (TaskUnlockedEvent)
     - episodeId, completedAt 필드 (EpisodeCompletedEvent)
     - src/workflow/types/events.type.ts 파일 생성
     - _Requirements: 7.1, 7.2_
 
-  - [ ] 10.2 이벤트 발행 로직 구현
+  - [x] 10.2 이벤트 발행 로직 구현
     - NestJS EventEmitter2 통합
     - unlockNextTask 시 TaskUnlockedEvent 발행
     - completeTask에서 이벤트 발행 연동
     - _Requirements: 7.1, 4.4_
 
-  - [ ] 10.3 Property test: Event emission
+  - [x] 10.3 Property test: Event emission
     - **Property 6: Task Unlock Event Emission**
     - **Validates: Requirements 7.1, 7.2**
 
 - [ ] 11. 에피소드 진행률 계산 구현
-  - [ ] 11.1 calculateEpisodeProgress 메서드 구현
+  - [x] 11.1 calculateEpisodeProgress 메서드 구현
     - 완료된 Task 수 / 전체 Task 수 (20개) × 100
     - TaskType별 진행률 breakdown
     - EpisodeProgress 타입 정의
     - _Requirements: 5.1, 5.3_
 
-  - [ ] 11.2 에피소드 완료 처리 구현
+  - [x] 11.2 에피소드 완료 처리 구현
     - 20개 Task 모두 DONE 시 Episode COMPLETED 처리
     - EpisodeCompletedEvent 발행
     - _Requirements: 5.2_
 
-  - [ ] 11.3 Property test: Progress calculation
+  - [x] 11.3 Property test: Progress calculation
     - **Property 5: Episode Progress Calculation**
     - **Validates: Requirements 5.1, 5.2**
 
 - [ ] 12. 페이지 초기화 구현
-  - [ ] 12.1 initializePages 메서드 구현
+  - [x] 12.1 initializePages 메서드 구현
     - Episode 생성 시 5개 Page 자동 생성
     - 순차적 pageNumber (1-5) 할당
     - 초기 상태 설정 (BACKGROUND: READY, 나머지: LOCKED)
     - _Requirements: 1.1, 1.3_
 
-- [ ] 13. Checkpoint - WorkflowEngine 완료
+- [x] 13. Checkpoint - WorkflowEngine 완료
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 14. 모듈 통합
-  - [ ] 14.1 WorkflowModule 정의
+  - [x] 14.1 WorkflowModule 정의
     - WorkflowEngineService provider 등록
     - Page 엔티티 TypeORM 등록
     - EventEmitterModule 통합
     - _Requirements: 1.1_
 
-  - [ ] 14.2 SchedulingModule과 연동
+  - [x] 14.2 SchedulingModule과 연동
     - Episode 생성 시 Page 자동 초기화 연결
     - _Requirements: 1.1_
 
-- [ ] 15. Final checkpoint - 전체 모듈 완료
+- [-] 15. Final checkpoint - 전체 모듈 완료
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

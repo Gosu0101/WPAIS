@@ -1,5 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { TaskStatus, TaskType, TASK_DEPENDENCY_CHAIN, isValidTransition } from '../types';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { 
+  TaskStatus, 
+  TaskType, 
+  TASK_DEPENDENCY_CHAIN, 
+  isValidTransition, 
+  WORKFLOW_EVENTS, 
+  TaskUnlockedEvent,
+  EpisodeProgress,
+  TaskTypeProgress,
+  EpisodeCompletedEvent,
+} from '../types';
 import { InvalidStateTransitionError, LockedException } from '../errors';
 import { Page } from '../entities/page.entity';
 
@@ -20,6 +31,7 @@ const TASK_SUCCESSOR_CHAIN: Record<TaskType, TaskType | null> = {
  */
 @Injectable()
 export class WorkflowEngineService {
+  constructor(private readonly eventEmitter: EventEmitter2) {}
   /**
    * 상태 전이 검증
    * 유효한 전이: LOCKED→READY, READY→IN_PROGRESS, IN_PROGRESS→DONE
@@ -197,8 +209,162 @@ export class WorkflowEngineService {
     // 다음 작업이 LOCKED 상태인 경우에만 READY로 변경
     if (nextTaskStatus === TaskStatus.LOCKED) {
       this.setTaskStatus(page, nextTaskType, TaskStatus.READY);
+      
+      // TaskUnlockedEvent 발행
+      this.emitTaskUnlockedEvent(page.id, nextTaskType);
     }
 
     return page;
+  }
+
+  /**
+   * TaskUnlockedEvent 발행
+   * 작업이 READY 상태로 변경될 때 이벤트 발행
+   * 
+   * @param pageId 페이지 ID
+   * @param taskType 잠금 해제된 작업 유형
+   * 
+   * Requirements: 7.1, 7.2
+   */
+  private emitTaskUnlockedEvent(pageId: string, taskType: TaskType): void {
+    const event: TaskUnlockedEvent = {
+      pageId,
+      taskType,
+      timestamp: new Date(),
+    };
+    this.eventEmitter.emit(WORKFLOW_EVENTS.TASK_UNLOCKED, event);
+  }
+
+  /**
+   * 에피소드 진행률 계산
+   * 완료된 Task 수 / 전체 Task 수 (20개) × 100
+   * TaskType별 진행률 breakdown 포함
+   * 
+   * @param episodeId 에피소드 ID
+   * @param pages 해당 에피소드의 Page 배열 (5개)
+   * @returns EpisodeProgress 객체
+   * 
+   * Requirements: 5.1, 5.3
+   */
+  calculateEpisodeProgress(episodeId: string, pages: Page[]): EpisodeProgress {
+    const totalPages = pages.length;
+    const totalTasks = totalPages * 4; // 4 task types per page
+
+    // TaskType별 완료 카운트 초기화
+    const completedByType: Record<TaskType, number> = {
+      [TaskType.BACKGROUND]: 0,
+      [TaskType.LINE_ART]: 0,
+      [TaskType.COLORING]: 0,
+      [TaskType.POST_PROCESSING]: 0,
+    };
+
+    // 각 페이지의 완료된 작업 카운트
+    for (const page of pages) {
+      if (page.backgroundStatus === TaskStatus.DONE) {
+        completedByType[TaskType.BACKGROUND]++;
+      }
+      if (page.lineArtStatus === TaskStatus.DONE) {
+        completedByType[TaskType.LINE_ART]++;
+      }
+      if (page.coloringStatus === TaskStatus.DONE) {
+        completedByType[TaskType.COLORING]++;
+      }
+      if (page.postProcessingStatus === TaskStatus.DONE) {
+        completedByType[TaskType.POST_PROCESSING]++;
+      }
+    }
+
+    // 전체 완료 작업 수
+    const completedTasks = Object.values(completedByType).reduce((sum, count) => sum + count, 0);
+
+    // TaskType별 진행률 계산
+    const byTaskType: Record<TaskType, TaskTypeProgress> = {} as Record<TaskType, TaskTypeProgress>;
+    for (const taskType of Object.values(TaskType)) {
+      byTaskType[taskType] = {
+        total: totalPages,
+        completed: completedByType[taskType],
+        percentage: totalPages > 0 ? (completedByType[taskType] / totalPages) * 100 : 0,
+      };
+    }
+
+    return {
+      episodeId,
+      totalTasks,
+      completedTasks,
+      percentage: totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0,
+      byTaskType,
+    };
+  }
+
+  /**
+   * 에피소드 완료 여부 확인
+   * 모든 페이지의 모든 작업이 DONE인지 확인
+   * 
+   * @param pages 에피소드의 Page 배열
+   * @returns 모든 작업이 완료되었으면 true
+   * 
+   * Requirements: 5.2
+   */
+  isEpisodeCompleted(pages: Page[]): boolean {
+    return pages.every(page => 
+      page.backgroundStatus === TaskStatus.DONE &&
+      page.lineArtStatus === TaskStatus.DONE &&
+      page.coloringStatus === TaskStatus.DONE &&
+      page.postProcessingStatus === TaskStatus.DONE
+    );
+  }
+
+  /**
+   * 에피소드 완료 처리
+   * 모든 작업이 완료되었는지 확인하고 EpisodeCompletedEvent 발행
+   * 
+   * @param episodeId 에피소드 ID
+   * @param pages 에피소드의 Page 배열
+   * @returns 에피소드가 완료되었으면 true
+   * 
+   * Requirements: 5.2, 7.2
+   */
+  checkAndEmitEpisodeCompleted(episodeId: string, pages: Page[]): boolean {
+    if (this.isEpisodeCompleted(pages)) {
+      const event: EpisodeCompletedEvent = {
+        episodeId,
+        completedAt: new Date(),
+      };
+      this.eventEmitter.emit(WORKFLOW_EVENTS.EPISODE_COMPLETED, event);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 페이지 초기화
+   * Episode 생성 시 지정된 수의 Page를 자동 생성
+   * 
+   * @param episodeId 에피소드 ID
+   * @param count 생성할 페이지 수 (기본값: 5)
+   * @returns 생성된 Page 배열
+   * 
+   * Requirements: 1.1, 1.3
+   */
+  initializePages(episodeId: string, count: number = 5): Page[] {
+    const pages: Page[] = [];
+
+    for (let i = 1; i <= count; i++) {
+      const page = new Page();
+      page.id = `${episodeId}-page-${i}`;
+      page.episodeId = episodeId;
+      page.pageNumber = i;
+      page.heightPx = 20000;
+      page.backgroundStatus = TaskStatus.READY;
+      page.lineArtStatus = TaskStatus.LOCKED;
+      page.coloringStatus = TaskStatus.LOCKED;
+      page.postProcessingStatus = TaskStatus.LOCKED;
+      page.createdAt = new Date();
+      page.updatedAt = new Date();
+
+      pages.push(page);
+    }
+
+    return pages;
   }
 }

@@ -3,3 +3,4 @@ export * from './types';
 export * from './entities';
 export * from './errors';
 export * from './services';
+export * from './workflow.module';
