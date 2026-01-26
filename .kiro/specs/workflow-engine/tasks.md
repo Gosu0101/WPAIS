@@ -66,13 +66,13 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
     - **Property 3: Auto-Unlock Chain**
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.4**
 
-- [ ] 8. 작업 상태 변경 메서드 구현
+- [x] 8. 작업 상태 변경 메서드 구현
   - [x] 8.1 startTask 메서드 구현
     - READY → IN_PROGRESS 전이
     - 의존성 검증 포함
     - _Requirements: 2.4, 3.1, 3.2, 3.3_
 
-  - [ ] 8.2 completeTask 메서드 구현
+  - [x] 8.2 completeTask 메서드 구현
     - IN_PROGRESS → DONE 전이
     - 자동 잠금 해제 트리거
     - _Requirements: 2.5, 4.1, 4.2, 4.3_
@@ -81,12 +81,16 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 10. 이벤트 시스템 구현
-  - [ ] 10.1 TaskUnlockedEvent 정의
-    - pageId, taskType, timestamp 필드
+  - [ ] 10.1 TaskUnlockedEvent 및 EpisodeCompletedEvent 타입 정의
+    - pageId, taskType, timestamp 필드 (TaskUnlockedEvent)
+    - episodeId, completedAt 필드 (EpisodeCompletedEvent)
+    - src/workflow/types/events.type.ts 파일 생성
     - _Requirements: 7.1, 7.2_
 
   - [ ] 10.2 이벤트 발행 로직 구현
+    - NestJS EventEmitter2 통합
     - unlockNextTask 시 TaskUnlockedEvent 발행
+    - completeTask에서 이벤트 발행 연동
     - _Requirements: 7.1, 4.4_
 
   - [ ] 10.3 Property test: Event emission
@@ -97,6 +101,7 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
   - [ ] 11.1 calculateEpisodeProgress 메서드 구현
     - 완료된 Task 수 / 전체 Task 수 (20개) × 100
     - TaskType별 진행률 breakdown
+    - EpisodeProgress 타입 정의
     - _Requirements: 5.1, 5.3_
 
   - [ ] 11.2 에피소드 완료 처리 구현
@@ -122,6 +127,7 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
   - [ ] 14.1 WorkflowModule 정의
     - WorkflowEngineService provider 등록
     - Page 엔티티 TypeORM 등록
+    - EventEmitterModule 통합
     - _Requirements: 1.1_
 
   - [ ] 14.2 SchedulingModule과 연동
@@ -137,3 +143,22 @@ WPAIS 워크플로우 엔진 모듈의 구현 계획입니다. Page 엔티티와
 - 각 Task는 특정 Requirements를 참조하여 추적 가능
 - Checkpoint에서 모든 테스트 통과 확인 필수
 - 스테이지 퍼스트 의존성은 핵심 비즈니스 로직이므로 철저히 테스트
+
+
+## Notes
+
+- 모든 Property test는 fast-check를 사용하여 100회 이상 실행
+- 각 Task는 특정 Requirements를 참조하여 추적 가능
+- Checkpoint에서 모든 테스트 통과 확인 필수
+- 스테이지 퍼스트 의존성은 핵심 비즈니스 로직이므로 철저히 테스트
+
+## Progress Summary
+
+| 구분 | 완료 | 미완료 | 진행률 |
+|------|------|--------|--------|
+| 핵심 로직 | 7/8 | 1 | 87.5% |
+| 이벤트 시스템 | 0/3 | 3 | 0% |
+| 진행률 계산 | 0/3 | 3 | 0% |
+| 모듈 통합 | 0/2 | 2 | 0% |
+
+**다음 작업**: Task 8.2 completeTask 메서드 구현

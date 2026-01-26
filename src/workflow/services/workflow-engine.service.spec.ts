@@ -675,4 +675,138 @@ describe('WorkflowEngineService', () => {
       );
     });
   });
+
+  describe('completeTask', () => {
+    /**
+     * completeTask 메서드 단위 테스트
+     * IN_PROGRESS → DONE 전이와 자동 잠금 해제 트리거
+     * 
+     * Requirements: 2.5, 4.1, 4.2, 4.3
+     */
+
+    it('should complete BACKGROUND task and unlock LINE_ART', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.IN_PROGRESS,
+        lineArtStatus: TaskStatus.LOCKED,
+      });
+
+      const result = service.completeTask(page, TaskType.BACKGROUND);
+
+      expect(result.backgroundStatus).toBe(TaskStatus.DONE);
+      expect(result.lineArtStatus).toBe(TaskStatus.READY);
+    });
+
+    it('should complete LINE_ART task and unlock COLORING', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.IN_PROGRESS,
+        coloringStatus: TaskStatus.LOCKED,
+      });
+
+      const result = service.completeTask(page, TaskType.LINE_ART);
+
+      expect(result.lineArtStatus).toBe(TaskStatus.DONE);
+      expect(result.coloringStatus).toBe(TaskStatus.READY);
+    });
+
+    it('should complete COLORING task and unlock POST_PROCESSING', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.DONE,
+        coloringStatus: TaskStatus.IN_PROGRESS,
+        postProcessingStatus: TaskStatus.LOCKED,
+      });
+
+      const result = service.completeTask(page, TaskType.COLORING);
+
+      expect(result.coloringStatus).toBe(TaskStatus.DONE);
+      expect(result.postProcessingStatus).toBe(TaskStatus.READY);
+    });
+
+    it('should complete POST_PROCESSING task (no successor to unlock)', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+        lineArtStatus: TaskStatus.DONE,
+        coloringStatus: TaskStatus.DONE,
+        postProcessingStatus: TaskStatus.IN_PROGRESS,
+      });
+
+      const result = service.completeTask(page, TaskType.POST_PROCESSING);
+
+      expect(result.postProcessingStatus).toBe(TaskStatus.DONE);
+    });
+
+    it('should throw InvalidStateTransitionError when task is LOCKED', () => {
+      const page = createTestPage({
+        lineArtStatus: TaskStatus.LOCKED,
+      });
+
+      expect(() => service.completeTask(page, TaskType.LINE_ART)).toThrow(
+        InvalidStateTransitionError
+      );
+    });
+
+    it('should throw InvalidStateTransitionError when task is READY', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.READY,
+      });
+
+      expect(() => service.completeTask(page, TaskType.BACKGROUND)).toThrow(
+        InvalidStateTransitionError
+      );
+    });
+
+    it('should throw InvalidStateTransitionError when task is already DONE', () => {
+      const page = createTestPage({
+        backgroundStatus: TaskStatus.DONE,
+      });
+
+      expect(() => service.completeTask(page, TaskType.BACKGROUND)).toThrow(
+        InvalidStateTransitionError
+      );
+    });
+
+    it('should complete full workflow chain: BACKGROUND → LINE_ART → COLORING → POST_PROCESSING', () => {
+      // Start with initial page state
+      let page = createTestPage({
+        backgroundStatus: TaskStatus.READY,
+        lineArtStatus: TaskStatus.LOCKED,
+        coloringStatus: TaskStatus.LOCKED,
+        postProcessingStatus: TaskStatus.LOCKED,
+      });
+
+      // Start and complete BACKGROUND
+      page = service.startTask(page, TaskType.BACKGROUND);
+      expect(page.backgroundStatus).toBe(TaskStatus.IN_PROGRESS);
+      page = service.completeTask(page, TaskType.BACKGROUND);
+      expect(page.backgroundStatus).toBe(TaskStatus.DONE);
+      expect(page.lineArtStatus).toBe(TaskStatus.READY);
+
+      // Start and complete LINE_ART
+      page = service.startTask(page, TaskType.LINE_ART);
+      expect(page.lineArtStatus).toBe(TaskStatus.IN_PROGRESS);
+      page = service.completeTask(page, TaskType.LINE_ART);
+      expect(page.lineArtStatus).toBe(TaskStatus.DONE);
+      expect(page.coloringStatus).toBe(TaskStatus.READY);
+
+      // Start and complete COLORING
+      page = service.startTask(page, TaskType.COLORING);
+      expect(page.coloringStatus).toBe(TaskStatus.IN_PROGRESS);
+      page = service.completeTask(page, TaskType.COLORING);
+      expect(page.coloringStatus).toBe(TaskStatus.DONE);
+      expect(page.postProcessingStatus).toBe(TaskStatus.READY);
+
+      // Start and complete POST_PROCESSING
+      page = service.startTask(page, TaskType.POST_PROCESSING);
+      expect(page.postProcessingStatus).toBe(TaskStatus.IN_PROGRESS);
+      page = service.completeTask(page, TaskType.POST_PROCESSING);
+      expect(page.postProcessingStatus).toBe(TaskStatus.DONE);
+
+      // All tasks should be DONE
+      expect(page.backgroundStatus).toBe(TaskStatus.DONE);
+      expect(page.lineArtStatus).toBe(TaskStatus.DONE);
+      expect(page.coloringStatus).toBe(TaskStatus.DONE);
+      expect(page.postProcessingStatus).toBe(TaskStatus.DONE);
+    });
+  });
 });

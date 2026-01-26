@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { TaskStatus, TaskType, TASK_DEPENDENCY_CHAIN, TASK_TYPE_ORDER, isValidTransition } from '../types';
+import { TaskStatus, TaskType, TASK_DEPENDENCY_CHAIN, isValidTransition } from '../types';
 import { InvalidStateTransitionError, LockedException } from '../errors';
 import { Page } from '../entities/page.entity';
 
@@ -143,6 +143,30 @@ export class WorkflowEngineService {
     this.setTaskStatus(page, taskType, TaskStatus.IN_PROGRESS);
 
     return page;
+  }
+
+  /**
+   * 작업 완료 (IN_PROGRESS → DONE)
+   * 상태 전이 검증 후 작업을 완료 상태로 변경하고 자동 잠금 해제 트리거
+   * 
+   * @param page 대상 Page 엔티티
+   * @param taskType 완료할 작업 유형
+   * @returns 업데이트된 Page 엔티티 (다음 작업이 자동 해제됨)
+   * @throws InvalidStateTransitionError 현재 상태가 IN_PROGRESS가 아닌 경우
+   * 
+   * Requirements: 2.5, 4.1, 4.2, 4.3
+   */
+  completeTask(page: Page, taskType: TaskType): Page {
+    const currentStatus = this.getTaskStatus(page, taskType);
+
+    // 1. 상태 전이 검증 (IN_PROGRESS → DONE만 허용)
+    this.validateTransition(currentStatus, TaskStatus.DONE);
+
+    // 2. 상태 변경
+    this.setTaskStatus(page, taskType, TaskStatus.DONE);
+
+    // 3. 자동 잠금 해제 트리거
+    return this.unlockNextTask(page, taskType);
   }
 
   /**
