@@ -1,105 +1,117 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* WPAIS 브랜드 컬러 - 인더스트리얼 + 소프트 모던 */
+    --background: 220 20% 97%;
+    --foreground: 220 20% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 220 20% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 142.1 76.2% 36.3%;
-    --radius: 0.5rem;
-
-    /* 상태 색상 */
+    --popover-foreground: 220 20% 10%;
+    
+    /* 프라이머리: 딥 틸 - 크리에이터 친화적 */
+    --primary: 175 84% 32%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 220 20% 10%;
+    --muted: 220 14% 92%;
+    --muted-foreground: 220 10% 46%;
+    --accent: 220 14% 92%;
+    --accent-foreground: 220 20% 10%;
+    
+    /* 시맨틱 컬러 */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 9%;
-    --info: 217.2 91.2% 59.8%;
-    --info-foreground: 0 0% 98%;
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 0 0% 98%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
 
-    /* 워크플로우 상태 색상 */
-    --status-locked: 240 5% 34%;
-    --status-ready: 217.2 91.2% 59.8%;
+    --border: 220 13% 87%;
+    --input: 220 13% 87%;
+    --ring: 175 84% 32%;
+    --radius: 0.625rem;
+
+    /* 워크플로우 상태 - 명확한 구분 */
+    --status-locked: 220 10% 54%;
+    --status-ready: 199 89% 48%;
     --status-in-progress: 38 92% 50%;
-    --status-done: 142.1 76.2% 36.3%;
+    --status-done: 160 84% 39%;
 
-    /* 리스크 레벨 색상 */
-    --risk-low: 142.1 76.2% 36.3%;
+    /* 리스크 레벨 */
+    --risk-low: 160 84% 39%;
     --risk-medium: 38 92% 50%;
-    --risk-high: 0 84.2% 60.2%;
+    --risk-high: 25 95% 53%;
     --risk-critical: 0 72% 51%;
 
-    /* 차트 색상 */
-    --chart-1: 142.1 76.2% 36.3%;
-    --chart-2: 217.2 91.2% 59.8%;
+    /* 차트 팔레트 - 조화로운 색상 */
+    --chart-1: 175 84% 32%;
+    --chart-2: 199 89% 48%;
     --chart-3: 38 92% 50%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --chart-4: 280 60% 55%;
+    --chart-5: 340 65% 55%;
   }
 
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 142.1 76.2% 36.3%;
-
-    /* 상태 색상 (다크 모드) */
-    --warning: 38 92% 50%;
+    /* 다크 모드 - 깊은 슬레이트 배경 */
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 96%;
+    
+    /* 프라이머리: 밝은 틸 */
+    --primary: 172 66% 50%;
+    --primary-foreground: 222 47% 6%;
+    
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 96%;
+    
+    /* 시맨틱 컬러 (다크) */
+    --destructive: 0 63% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
     --warning-foreground: 0 0% 9%;
-    --info: 217.2 91.2% 59.8%;
-    --info-foreground: 0 0% 98%;
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 0 0% 98%;
+    --info: 199 89% 55%;
+    --info-foreground: 0 0% 100%;
+    --success: 160 70% 45%;
+    --success-foreground: 0 0% 100%;
 
-    /* 워크플로우 상태 색상 (다크 모드) */
-    --status-locked: 240 5% 34%;
-    --status-ready: 217.2 91.2% 59.8%;
-    --status-in-progress: 38 92% 50%;
-    --status-done: 142.1 76.2% 36.3%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 172 66% 50%;
 
-    /* 리스크 레벨 색상 (다크 모드) */
-    --risk-low: 142.1 76.2% 36.3%;
-    --risk-medium: 38 92% 50%;
-    --risk-high: 0 84.2% 60.2%;
-    --risk-critical: 0 72% 51%;
+    /* 워크플로우 상태 (다크) */
+    --status-locked: 215 20% 40%;
+    --status-ready: 199 89% 55%;
+    --status-in-progress: 38 92% 55%;
+    --status-done: 160 70% 45%;
 
-    /* 차트 색상 (다크 모드) */
-    --chart-1: 142.1 70% 45%;
-    --chart-2: 217.2 85% 65%;
-    --chart-3: 38 85% 55%;
-    --chart-4: 280 60% 65%;
-    --chart-5: 340 70% 60%;
+    /* 리스크 레벨 (다크) */
+    --risk-low: 160 70% 45%;
+    --risk-medium: 38 92% 55%;
+    --risk-high: 25 95% 58%;
+    --risk-critical: 0 63% 55%;
+
+    /* 차트 팔레트 (다크) */
+    --chart-1: 172 66% 50%;
+    --chart-2: 199 89% 55%;
+    --chart-3: 38 92% 55%;
+    --chart-4: 280 55% 60%;
+    --chart-5: 340 60% 60%;
   }
 }
 
@@ -107,8 +119,119 @@
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sans);
+    font-family: 'Pretendard Variable', var(--font-geist-sans), system-ui, sans-serif;
+    font-feature-settings: 'ss01' on, 'ss02' on;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 타이포그래피 스케일 */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  /* 숫자/데이터 표시용 */
+  .font-data {
+    font-family: var(--font-geist-mono), 'JetBrains Mono', monospace;
+    font-feature-settings: 'tnum' on, 'lnum' on;
+  }
+}
+
+@layer components {
+  /* 카드 호버 효과 - 미묘한 리프트 */
+  .card-hover {
+    @apply transition-all duration-200 ease-out;
+  }
+  .card-hover:hover {
+    @apply -translate-y-0.5 shadow-lg;
+  }
+
+  /* 상태 뱃지 */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+  .status-badge-locked {
+    @apply bg-muted text-muted-foreground;
+  }
+  .status-badge-ready {
+    @apply bg-info/15 text-info;
+  }
+  .status-badge-in-progress {
+    @apply bg-warning/15 text-warning;
+  }
+  .status-badge-done {
+    @apply bg-success/15 text-success;
+  }
+
+  /* 리스크 인디케이터 */
+  .risk-indicator {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide;
+  }
+  .risk-low { @apply bg-success/15 text-success; }
+  .risk-medium { @apply bg-warning/15 text-warning; }
+  .risk-high { @apply bg-orange-500/15 text-orange-500; }
+  .risk-critical { @apply bg-destructive/15 text-destructive; }
+
+  /* 프로그레스 바 커스텀 */
+  .progress-bar {
+    @apply h-2 rounded-full bg-muted overflow-hidden;
+  }
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-500 ease-out;
+  }
+
+  /* 데이터 그리드 */
+  .data-grid {
+    @apply grid gap-4;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+
+  /* 미묘한 그라데이션 배경 */
+  .gradient-subtle {
+    background: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--primary) / 0.08), transparent),
+      hsl(var(--background));
+  }
+}
+
+@layer utilities {
+  /* 애니메이션 */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  /* 스태거 딜레이 */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
+
+  /* 글래스모피즘 (선택적 사용) */
+  .glass {
+    @apply backdrop-blur-md bg-card/80;
   }
 }
