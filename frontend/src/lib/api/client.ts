@@ -56,6 +56,40 @@ export interface Alert {
   createdAt: string;
 }
 
+export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type HealthStatus = "HEALTHY" | "WARNING" | "CRITICAL";
+
+export interface BufferStatus {
+  sealedEpisodes: number;
+  reserveEpisodes: number;
+  totalCompleted: number;
+  sealTarget: number;
+  reserveTarget: number;
+  sealProgress: number;
+  reserveProgress: number;
+  isOnTrack: boolean;
+}
+
+export interface ProjectProgress {
+  projectId: string;
+  totalTasks: number;
+  completedTasks: number;
+  progressPercentage: number;
+}
+
+export interface ProjectRisk {
+  projectId: string;
+  overallRiskLevel: RiskLevel;
+  riskScore: number;
+}
+
+export interface DashboardData {
+  projectId: string;
+  progress: ProjectProgress;
+  bufferStatus: BufferStatus;
+  risk: ProjectRisk;
+}
+
 export interface AlertsResponse {
   alerts: Alert[];
   total: number;
@@ -101,11 +135,11 @@ export const apiClient = {
 
   monitor: {
     dashboard: (projectId: string) =>
-      fetchApi<unknown>(`/projects/${projectId}/dashboard`),
+      fetchApi<DashboardData>(`/projects/${projectId}/dashboard`),
     bufferStatus: (projectId: string) =>
-      fetchApi<unknown>(`/projects/${projectId}/buffer-status`),
+      fetchApi<BufferStatus>(`/projects/${projectId}/buffer-status`),
     risk: (projectId: string) =>
-      fetchApi<unknown>(`/projects/${projectId}/risk`),
+      fetchApi<ProjectRisk>(`/projects/${projectId}/risk`),
     velocity: (projectId: string) =>
       fetchApi<unknown>(`/projects/${projectId}/velocity`),
     health: (projectId: string) =>
