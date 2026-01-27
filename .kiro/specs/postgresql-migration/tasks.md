@@ -21,7 +21,7 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
     - 연결 풀링 설정 포함
     - _Requirements: 1.2, 1.3_
 
-- [ ] 2. Checkpoint - 기본 설정 완료
+- [x] 2. Checkpoint - 기본 설정 완료
   - PostgreSQL 연결 테스트
 
 - [ ] 3. AppModule TypeORM 통합
@@ -103,11 +103,11 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
 
 | 구분 | 완료 | 미완료 | 진행률 |
 |------|------|--------|--------|
-| 기본 설정 | 0/3 | 3 | 0% |
+| 기본 설정 | 3/3 | 0 | 100% |
 | TypeORM 통합 | 0/2 | 2 | 0% |
 | 엔티티 최적화 | 0/3 | 3 | 0% |
 | 마이그레이션 | 0/5 | 5 | 0% |
 | 테스트 환경 | 0/2 | 2 | 0% |
 | 헬스체크 | 0/1 | 1 | 0% |
 
-**다음 작업**: Task 1.1 pg 드라이버 및 @nestjs/config 설치
+**다음 작업**: Task 3.1 AppModule에 TypeOrmModule 추가
