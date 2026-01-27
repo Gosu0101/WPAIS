@@ -47,7 +47,7 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
     - @Index() 데코레이터로 자주 조회되는 컬럼에 인덱스
     - _Requirements: 3.3_
 
-- [ ] 5. Checkpoint - 엔티티 최적화 완료
+- [-] 5. Checkpoint - 엔티티 최적화 완료
   - 엔티티 변경사항 검토
 
 - [ ] 6. TypeORM CLI 마이그레이션 설정
