@@ -5,6 +5,8 @@ import { Project, Episode, Milestone, EpisodeStatus, MilestoneType } from '../en
 import { CreateProjectInput, getDefaultVelocityConfig, MasterSchedule } from '../types';
 import { SchedulerService } from './scheduler.service';
 import { VelocityConfigService } from './velocity-config.service';
+import { Page } from '../../workflow/entities';
+import { TaskStatus } from '../../workflow/types';
 
 /**
  * ProjectManager - 프로젝트 생성 및 관리를 담당하는 서비스
@@ -20,6 +22,8 @@ export class ProjectManagerService {
     private readonly episodeRepository: Repository<Episode>,
     @InjectRepository(Milestone)
     private readonly milestoneRepository: Repository<Milestone>,
+    @InjectRepository(Page)
+    private readonly pageRepository: Repository<Page>,
     private readonly schedulerService: SchedulerService,
     private readonly velocityConfigService: VelocityConfigService,
   ) {}
@@ -71,7 +75,25 @@ export class ProjectManagerService {
 
     await this.episodeRepository.save(episodes);
 
-    // 5. 마일스톤 엔티티 생성 및 저장
+    // 5. 각 에피소드에 대해 페이지 생성 (5페이지씩)
+    const allPages: Page[] = [];
+    for (const episode of episodes) {
+      for (let pageNum = 1; pageNum <= 5; pageNum++) {
+        const page = this.pageRepository.create({
+          episodeId: episode.id,
+          pageNumber: pageNum,
+          heightPx: 20000,
+          backgroundStatus: TaskStatus.READY,
+          lineArtStatus: TaskStatus.LOCKED,
+          coloringStatus: TaskStatus.LOCKED,
+          postProcessingStatus: TaskStatus.LOCKED,
+        });
+        allPages.push(page);
+      }
+    }
+    await this.pageRepository.save(allPages);
+
+    // 6. 마일스톤 엔티티 생성 및 저장
     const milestones = masterSchedule.milestones.map((milestoneSchedule) => {
       return this.milestoneRepository.create({
         projectId: savedProject.id,
@@ -84,7 +106,7 @@ export class ProjectManagerService {
 
     await this.milestoneRepository.save(milestones);
 
-    // 6. 관계 포함하여 프로젝트 반환
+    // 7. 관계 포함하여 프로젝트 반환
     return this.projectRepository.findOne({
       where: { id: savedProject.id },
       relations: ['episodes', 'milestones'],

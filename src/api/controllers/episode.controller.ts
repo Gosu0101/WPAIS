@@ -16,6 +16,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Episode } from '../../scheduling/entities';
 import { Page } from '../../workflow/entities';
+import { TaskStatus } from '../../workflow/types';
 import { EpisodeResponseDto, EpisodeDetailResponseDto, EpisodeQueryDto } from '../dto/episode';
 import { PageResponseDto } from '../dto/page';
 import { ErrorResponseDto } from '../dto/common';
@@ -64,10 +65,28 @@ export class EpisodeController {
       throw new NotFoundException(`Episode with ID ${id} not found`);
     }
 
-    const pages = await this.pageRepository.find({
+    let pages = await this.pageRepository.find({
       where: { episodeId: id },
       order: { pageNumber: 'ASC' },
     });
+
+    // 페이지가 없으면 자동 생성 (기존 데이터 마이그레이션 지원)
+    if (pages.length === 0) {
+      const newPages: Page[] = [];
+      for (let pageNum = 1; pageNum <= 5; pageNum++) {
+        const page = this.pageRepository.create({
+          episodeId: id,
+          pageNumber: pageNum,
+          heightPx: 20000,
+          backgroundStatus: TaskStatus.READY,
+          lineArtStatus: TaskStatus.LOCKED,
+          coloringStatus: TaskStatus.LOCKED,
+          postProcessingStatus: TaskStatus.LOCKED,
+        });
+        newPages.push(page);
+      }
+      pages = await this.pageRepository.save(newPages);
+    }
 
     const pageResponses = pages.map((p) => PageResponseDto.fromEntity(p));
     return EpisodeDetailResponseDto.fromEntityWithPages(episode, pageResponses);

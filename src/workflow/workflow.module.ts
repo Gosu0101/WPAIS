@@ -25,6 +25,7 @@ import { WorkflowEngineService } from './services/workflow-engine.service';
   ],
   exports: [
     WorkflowEngineService,
+    TypeOrmModule.forFeature([Page]),
   ],
 })
 export class WorkflowModule {}
