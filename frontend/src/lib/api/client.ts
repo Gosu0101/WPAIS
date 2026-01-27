@@ -36,17 +36,42 @@ export interface UpdateProjectDto {
   totalEpisodes?: number;
 }
 
+export interface Project {
+  id: string;
+  name: string;
+  launchDate: string;
+  totalEpisodes: number;
+  pagesPerEpisode: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Alert {
+  id: string;
+  projectId: string;
+  severity: "INFO" | "WARNING" | "CRITICAL";
+  type: string;
+  message: string;
+  acknowledged: boolean;
+  createdAt: string;
+}
+
+export interface AlertsResponse {
+  alerts: Alert[];
+  total: number;
+}
+
 export const apiClient = {
   projects: {
-    list: () => fetchApi<unknown[]>("/projects"),
-    get: (id: string) => fetchApi<unknown>(`/projects/${id}`),
+    list: () => fetchApi<Project[]>("/projects"),
+    get: (id: string) => fetchApi<Project>(`/projects/${id}`),
     create: (data: CreateProjectDto) =>
-      fetchApi<unknown>("/projects", {
+      fetchApi<Project>("/projects", {
         method: "POST",
         body: JSON.stringify(data),
       }),
     update: (id: string, data: UpdateProjectDto) =>
-      fetchApi<unknown>(`/projects/${id}`, {
+      fetchApi<Project>(`/projects/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
@@ -90,7 +115,7 @@ export const apiClient = {
       if (params?.severity) searchParams.set("severity", params.severity);
       if (params?.limit) searchParams.set("limit", params.limit.toString());
       const query = searchParams.toString();
-      return fetchApi<unknown[]>(
+      return fetchApi<AlertsResponse>(
         `/projects/${projectId}/alerts${query ? `?${query}` : ""}`
       );
     },
