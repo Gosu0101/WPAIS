@@ -63,7 +63,7 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
     - npm run migration:generate -- -n InitialSchema
     - _Requirements: 2.2_
 
-- [ ] 7. 마이그레이션 실행
+- [x] 7. 마이그레이션 실행
   - [x] 7.1 PostgreSQL 데이터베이스 생성
     - wpais_db 데이터베이스 생성 확인
     - _Requirements: 2.3_
@@ -72,21 +72,21 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
     - npm run migration:run
     - _Requirements: 2.3_
 
-- [ ] 8. Checkpoint - 마이그레이션 완료
-  - 테이블 생성 확인
+- [x] 8. Checkpoint - 마이그레이션 완료
+  - 테이블 생성 확인 (projects, episodes, milestones, pages, alerts, progress_snapshots)
 
-- [ ] 9. 테스트 환경 분리
-  - [ ] 9.1 테스트용 TypeORM 설정 유지
+- [x] 9. 테스트 환경 분리
+  - [x] 9.1 테스트용 TypeORM 설정 유지
     - test/utils/test-app.module.ts SQLite 설정 유지
     - _Requirements: 4.1_
 
-  - [ ] 9.2 환경별 설정 분리
-    - NODE_ENV에 따른 설정 분기
+  - [x] 9.2 환경별 설정 분리
+    - NODE_ENV에 따른 설정 분기 (database.config.ts에서 구현됨)
     - _Requirements: 4.2_
 
-- [ ] 10. 헬스체크 구현
-  - [ ] 10.1 DB 헬스체크 엔드포인트
-    - GET /health에 DB 상태 포함
+- [x] 10. 헬스체크 구현
+  - [x] 10.1 DB 헬스체크 엔드포인트
+    - GET /health에 DB 연결 상태 포함
     - _Requirements: 5.1_
 
 - [ ] 11. Final checkpoint - PostgreSQL 마이그레이션 완료
@@ -107,8 +107,8 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
 | TypeORM 통합 | 2/2 | 0 | 100% |
 | 엔티티 최적화 | 3/3 | 0 | 100% |
 | 마이그레이션 설정 | 3/3 | 0 | 100% |
-| 마이그레이션 실행 | 0/2 | 2 | 0% |
-| 테스트 환경 | 0/2 | 2 | 0% |
+| 마이그레이션 실행 | 2/2 | 0 | 100% |
+| 테스트 환경 | 2/2 | 0 | 100% |
 | 헬스체크 | 0/1 | 1 | 0% |
 
-**다음 작업**: Task 7.1 PostgreSQL 데이터베이스 생성 확인
+**다음 작업**: Task 10.1 DB 헬스체크 엔드포인트 구현

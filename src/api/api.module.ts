@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { TerminusModule } from '@nestjs/terminus';
 import { SchedulingModule, Project, Episode, Milestone } from '../scheduling';
 import { WorkflowModule, Page } from '../workflow';
 import { MonitorModule } from '../monitor';
@@ -11,11 +12,13 @@ import {
   PageController,
   MilestoneController,
   MonitorController,
+  HealthController,
 } from './controllers';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Project, Episode, Milestone, Page]),
+    TerminusModule,
     SchedulingModule,
     WorkflowModule,
     MonitorModule,
@@ -26,6 +29,7 @@ import {
     PageController,
     MilestoneController,
     MonitorController,
+    HealthController,
   ],
   providers: [
     {
