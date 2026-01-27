@@ -6,34 +6,34 @@ WPAIS 프론트엔드 대시보드 구현 계획입니다. Next.js 14 App Router
 
 ## Tasks
 
-- [ ] 1. 프로젝트 초기 설정
-  - [ ] 1.1 Next.js 14 프로젝트 생성
+- [x] 1. 프로젝트 초기 설정
+  - [x] 1.1 Next.js 14 프로젝트 생성
     - create-next-app으로 frontend 디렉토리 생성
     - TypeScript, Tailwind CSS, App Router 설정
     - _Requirements: N/A (Setup)_
 
-  - [ ] 1.2 shadcn/ui 설정
+  - [x] 1.2 shadcn/ui 설정
     - shadcn/ui 초기화
     - 기본 컴포넌트 설치 (Button, Card, Input, etc.)
     - _Requirements: N/A (Setup)_
 
-  - [ ] 1.3 디자인 시스템 설정
+  - [x] 1.3 디자인 시스템 설정
     - 컬러 팔레트 정의 (globals.css)
     - 폰트 설정 (Pretendard, Geist)
     - _Requirements: 7.1_
 
-  - [ ] 1.4 API 클라이언트 설정
+  - [x] 1.4 API 클라이언트 설정
     - lib/api/client.ts 생성
     - 환경 변수 설정 (.env.local)
     - _Requirements: N/A (Setup)_
 
-  - [ ] 1.5 React Query 설정
+  - [x] 1.5 React Query 설정
     - QueryClientProvider 설정
     - 기본 훅 생성
     - _Requirements: N/A (Setup)_
 
-- [ ] 2. Checkpoint - 프로젝트 설정 완료
-  - 개발 서버 실행 확인
+- [x] 2. Checkpoint - 프로젝트 설정 완료
+  - 개발 서버 실행 확인 ✓ (localhost:3000)
 
 - [ ] 3. 레이아웃 및 네비게이션
   - [ ] 3.1 루트 레이아웃 구현
@@ -197,7 +197,7 @@ WPAIS 프론트엔드 대시보드 구현 계획입니다. Next.js 14 App Router
 
 | 구분 | 완료 | 미완료 | 진행률 |
 |------|------|--------|--------|
-| 초기 설정 | 0/5 | 5 | 0% |
+| 초기 설정 | 5/5 | 0 | 100% |
 | 레이아웃 | 0/3 | 3 | 0% |
 | 프로젝트 목록 | 0/3 | 3 | 0% |
 | 대시보드 | 0/7 | 7 | 0% |
@@ -207,4 +207,4 @@ WPAIS 프론트엔드 대시보드 구현 계획입니다. Next.js 14 App Router
 | 알림 | 0/3 | 3 | 0% |
 | 반응형 | 0/2 | 2 | 0% |
 
-**다음 작업**: Task 1.1 Next.js 14 프로젝트 생성
+**다음 작업**: Task 3.1 루트 레이아웃 구현
