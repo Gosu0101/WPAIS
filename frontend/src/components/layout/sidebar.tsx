@@ -61,6 +61,8 @@ const navItems: NavItem[] = [
     title: "알림",
     href: "/alerts",
     icon: Bell,
+    requiresProject: true,
+    getProjectHref: (projectId) => `/projects/${projectId}/alerts`,
   },
 ];
 
