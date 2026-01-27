@@ -6,6 +6,9 @@ export class EpisodeResponseDto {
   @ApiProperty({ description: '에피소드 ID' })
   id: string;
 
+  @ApiProperty({ description: '프로젝트 ID' })
+  projectId: string;
+
   @ApiProperty({ description: '에피소드 번호' })
   episodeNumber: number;
 
@@ -23,6 +26,7 @@ export class EpisodeResponseDto {
 
   static fromEntity(entity: {
     id: string;
+    projectId: string;
     episodeNumber: number;
     dueDate: Date;
     duration: number;
@@ -31,6 +35,7 @@ export class EpisodeResponseDto {
   }): EpisodeResponseDto {
     return {
       id: entity.id,
+      projectId: entity.projectId,
       episodeNumber: entity.episodeNumber,
       dueDate: entity.dueDate,
       duration: entity.duration,
@@ -47,6 +52,7 @@ export class EpisodeDetailResponseDto extends EpisodeResponseDto {
   static fromEntityWithPages(
     entity: {
       id: string;
+      projectId: string;
       episodeNumber: number;
       dueDate: Date;
       duration: number;

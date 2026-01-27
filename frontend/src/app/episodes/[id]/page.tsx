@@ -117,6 +117,7 @@ export default function EpisodeDetailPage({ params }: EpisodeDetailPageProps) {
     <AppLayout
       title={`EP.${episode.episodeNumber.toString().padStart(2, "0")}`}
       subtitle="에피소드 상세"
+      projectId={episode.projectId}
     >
       <div className="space-y-6">
         {/* Episode Info Cards */}

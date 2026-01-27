@@ -111,6 +111,7 @@ export type TaskStatus = "LOCKED" | "READY" | "IN_PROGRESS" | "DONE";
 
 export interface Episode {
   id: string;
+  projectId: string;
   episodeNumber: number;
   dueDate: string;
   duration: number;

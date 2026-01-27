@@ -36,7 +36,7 @@ export default function ProjectDashboardPage({
   }
 
   return (
-    <AppLayout title={project.title} subtitle="프로젝트 대시보드">
+    <AppLayout title={project.title} subtitle="프로젝트 대시보드" projectId={id}>
       <DashboardGrid projectId={id} />
     </AppLayout>
   );

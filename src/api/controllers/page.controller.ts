@@ -18,10 +18,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Page } from '../../workflow/entities';
 import { WorkflowEngineService } from '../../workflow/services';
-import { TaskType } from '../../workflow/types';
+import { TaskType, TaskStatus } from '../../workflow/types';
 import { InvalidStateTransitionError, LockedException } from '../../workflow/errors';
 import { PageResponseDto } from '../dto/page';
 import { ErrorResponseDto } from '../dto/common';
+import { Episode, EpisodeStatus } from '../../scheduling/entities';
 
 @ApiTags('pages')
 @Controller('api/pages')
@@ -29,6 +30,8 @@ export class PageController {
   constructor(
     @InjectRepository(Page)
     private readonly pageRepository: Repository<Page>,
+    @InjectRepository(Episode)
+    private readonly episodeRepository: Repository<Episode>,
     private readonly workflowEngineService: WorkflowEngineService,
   ) {}
 
@@ -68,6 +71,10 @@ export class PageController {
     try {
       const updatedPage = this.workflowEngineService.startTask(page, validTaskType);
       await this.pageRepository.save(updatedPage);
+
+      // 에피소드 상태를 IN_PROGRESS로 업데이트 (아직 PENDING인 경우)
+      await this.updateEpisodeStatusToInProgress(page.episodeId);
+
       return PageResponseDto.fromEntity(updatedPage);
     } catch (error) {
       if (error instanceof LockedException) {
@@ -107,6 +114,9 @@ export class PageController {
       });
       this.workflowEngineService.checkAndEmitEpisodeCompleted(page.episodeId, episodePages);
 
+      // 모든 페이지가 완료되었는지 확인하고 에피소드 상태 업데이트
+      await this.checkAndUpdateEpisodeCompletion(page.episodeId, episodePages);
+
       return PageResponseDto.fromEntity(updatedPage);
     } catch (error) {
       if (error instanceof InvalidStateTransitionError) {
@@ -133,5 +143,36 @@ export class PageController {
       );
     }
     return normalizedType as TaskType;
+  }
+
+  /**
+   * 에피소드 상태를 IN_PROGRESS로 업데이트 (PENDING인 경우에만)
+   */
+  private async updateEpisodeStatusToInProgress(episodeId: string): Promise<void> {
+    const episode = await this.episodeRepository.findOne({ where: { id: episodeId } });
+    if (episode && episode.status === EpisodeStatus.PENDING) {
+      episode.status = EpisodeStatus.IN_PROGRESS;
+      await this.episodeRepository.save(episode);
+    }
+  }
+
+  /**
+   * 모든 페이지의 모든 작업이 완료되었는지 확인하고 에피소드 상태를 COMPLETED로 업데이트
+   */
+  private async checkAndUpdateEpisodeCompletion(episodeId: string, pages: Page[]): Promise<void> {
+    const allPagesCompleted = pages.every(page => 
+      page.backgroundStatus === TaskStatus.DONE &&
+      page.lineArtStatus === TaskStatus.DONE &&
+      page.coloringStatus === TaskStatus.DONE &&
+      page.postProcessingStatus === TaskStatus.DONE
+    );
+
+    if (allPagesCompleted) {
+      const episode = await this.episodeRepository.findOne({ where: { id: episodeId } });
+      if (episode && episode.status !== EpisodeStatus.COMPLETED) {
+        episode.status = EpisodeStatus.COMPLETED;
+        await this.episodeRepository.save(episode);
+      }
+    }
   }
 }

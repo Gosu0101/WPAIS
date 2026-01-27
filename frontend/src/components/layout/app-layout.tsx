@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { BottomNav } from "./bottom-nav";
@@ -10,6 +11,7 @@ interface AppLayoutProps {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
+  projectId?: string; // 페이지에서 전달받은 프로젝트 ID
 }
 
 // 브레이크포인트 상수
@@ -18,10 +20,41 @@ const BREAKPOINTS = {
   lg: 1024,
 };
 
-export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
+export function AppLayout({ children, title, subtitle, projectId: propProjectId }: AppLayoutProps) {
+  const pathname = usePathname();
   const [selectedProjectId, setSelectedProjectId] = useState<string>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // URL에서 프로젝트 ID 추출
+  const extractProjectIdFromUrl = useCallback(() => {
+    const match = pathname.match(/\/projects\/([a-f0-9-]+)/);
+    return match ? match[1] : null;
+  }, [pathname]);
+
+  // 프로젝트 ID 초기화 및 복원
+  useEffect(() => {
+    // 1. props로 전달된 프로젝트 ID 우선
+    if (propProjectId) {
+      setSelectedProjectId(propProjectId);
+      localStorage.setItem("selectedProjectId", propProjectId);
+      return;
+    }
+
+    // 2. URL에서 프로젝트 ID 추출
+    const urlProjectId = extractProjectIdFromUrl();
+    if (urlProjectId) {
+      setSelectedProjectId(urlProjectId);
+      localStorage.setItem("selectedProjectId", urlProjectId);
+      return;
+    }
+
+    // 3. localStorage에서 복원
+    const savedProjectId = localStorage.getItem("selectedProjectId");
+    if (savedProjectId && !selectedProjectId) {
+      setSelectedProjectId(savedProjectId);
+    }
+  }, [propProjectId, extractProjectIdFromUrl, selectedProjectId]);
 
   // 화면 크기에 따라 사이드바 접힘 상태 초기화
   useEffect(() => {
@@ -49,6 +82,7 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
 
   const handleProjectSelect = useCallback((projectId: string) => {
     setSelectedProjectId(projectId);
+    localStorage.setItem("selectedProjectId", projectId);
   }, []);
 
   const handleMenuClick = useCallback(() => {
