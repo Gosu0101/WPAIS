@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -29,6 +29,7 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   requiresProject?: boolean;
+  getProjectHref?: (projectId: string) => string;
 }
 
 const navItems: NavItem[] = [
@@ -47,12 +48,14 @@ const navItems: NavItem[] = [
     href: "/episodes",
     icon: Film,
     requiresProject: true,
+    getProjectHref: (projectId) => `/projects/${projectId}/episodes`,
   },
   {
     title: "마일스톤",
     href: "/milestones",
     icon: Flag,
     requiresProject: true,
+    getProjectHref: (projectId) => `/projects/${projectId}/milestones`,
   },
   {
     title: "알림",
@@ -68,10 +71,15 @@ interface SidebarProps {
 
 export function Sidebar({ selectedProjectId, onProjectSelect }: SidebarProps) {
   const pathname = usePathname();
+  const params = useParams();
   const { data: projectsResponse, isLoading } = useProjects();
 
+  // URL에서 프로젝트 ID 추출 (있는 경우)
+  const urlProjectId = params?.id as string | undefined;
+  const activeProjectId = selectedProjectId || urlProjectId;
+
   const projects = projectsResponse?.data ?? [];
-  const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const selectedProject = projects.find((p) => p.id === activeProjectId);
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-border bg-card">
@@ -107,7 +115,7 @@ export function Sidebar({ selectedProjectId, onProjectSelect }: SidebarProps) {
                 onClick={() => onProjectSelect?.(project.id)}
                 className={cn(
                   "cursor-pointer",
-                  project.id === selectedProjectId && "bg-accent"
+                  project.id === activeProjectId && "bg-accent"
                 )}
               >
                 <span className="truncate">{project.title}</span>
@@ -128,15 +136,19 @@ export function Sidebar({ selectedProjectId, onProjectSelect }: SidebarProps) {
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="flex flex-col gap-1">
           {navItems.map((item) => {
+            const href = item.requiresProject && activeProjectId && item.getProjectHref
+              ? item.getProjectHref(activeProjectId)
+              : item.href;
             const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
-            const isDisabled = item.requiresProject && !selectedProjectId;
+              pathname === href ||
+              (item.href !== "/" && pathname.startsWith(item.href)) ||
+              (item.requiresProject && pathname.includes(item.href.slice(1)));
+            const isDisabled = item.requiresProject && !activeProjectId;
 
             return (
               <Link
                 key={item.href}
-                href={isDisabled ? "#" : item.href}
+                href={isDisabled ? "#" : href}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive

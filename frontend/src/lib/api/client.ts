@@ -144,6 +144,24 @@ export interface PaginatedResponse<T> {
   meta: PaginationMeta;
 }
 
+export type MilestoneType =
+  | "PLANNING_COMPLETE"
+  | "HIRING_COMPLETE"
+  | "PRODUCTION_START"
+  | "EPISODE_3_COMPLETE"
+  | "EPISODE_5_COMPLETE"
+  | "EPISODE_7_SEAL"
+  | "LAUNCH";
+
+export interface Milestone {
+  id: string;
+  name: string;
+  type: MilestoneType;
+  targetDate: string;
+  isCompleted: boolean;
+  completedAt?: string | null;
+}
+
 export const apiClient = {
   projects: {
     list: (params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'ASC' | 'DESC'; title?: string }) => {
@@ -223,7 +241,7 @@ export const apiClient = {
 
   milestones: {
     list: (projectId: string) =>
-      fetchApi<unknown[]>(`/projects/${projectId}/milestones`),
+      fetchApi<Milestone[]>(`/projects/${projectId}/milestones`),
   },
 };
 

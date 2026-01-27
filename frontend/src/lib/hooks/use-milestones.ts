@@ -1,10 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "../api/client";
+import { apiClient, Milestone } from "../api/client";
 
 export function useMilestones(projectId: string) {
-  return useQuery({
+  return useQuery<Milestone[]>({
     queryKey: ["milestones", projectId],
     queryFn: () => apiClient.milestones.list(projectId),
     enabled: !!projectId,
