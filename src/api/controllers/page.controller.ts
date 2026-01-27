@@ -117,12 +117,21 @@ export class PageController {
   }
 
   private validateTaskType(taskType: string): TaskType {
-    const upperTaskType = taskType.toUpperCase();
-    if (!Object.values(TaskType).includes(upperTaskType as TaskType)) {
+    // camelCase를 SNAKE_CASE로 변환 (lineArt -> LINE_ART)
+    const snakeCaseType = taskType
+      .replace(/([A-Z])/g, '_$1')
+      .toUpperCase();
+    
+    // 이미 대문자인 경우 그대로 사용
+    const normalizedType = Object.values(TaskType).includes(taskType.toUpperCase() as TaskType)
+      ? taskType.toUpperCase()
+      : snakeCaseType;
+
+    if (!Object.values(TaskType).includes(normalizedType as TaskType)) {
       throw new BadRequestException(
         `Invalid task type: ${taskType}. Valid types are: ${Object.values(TaskType).join(', ')}`,
       );
     }
-    return upperTaskType as TaskType;
+    return normalizedType as TaskType;
   }
 }
