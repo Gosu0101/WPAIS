@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { Page } from './entities/page.entity';
 import { WorkflowEngineService } from './services/workflow-engine.service';
 
 /**
@@ -15,6 +17,7 @@ import { WorkflowEngineService } from './services/workflow-engine.service';
  */
 @Module({
   imports: [
+    TypeOrmModule.forFeature([Page]),
     EventEmitterModule.forRoot(),
   ],
   providers: [
