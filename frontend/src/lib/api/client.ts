@@ -104,6 +104,32 @@ export interface AlertsResponse {
   total: number;
 }
 
+export type EpisodeStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED";
+export type TaskStatus = "LOCKED" | "READY" | "IN_PROGRESS" | "DONE";
+
+export interface Episode {
+  id: string;
+  episodeNumber: number;
+  dueDate: string;
+  duration: number;
+  status: EpisodeStatus;
+  isSealed: boolean;
+}
+
+export interface Page {
+  id: string;
+  pageNumber: number;
+  heightPx: number;
+  backgroundStatus: TaskStatus;
+  lineArtStatus: TaskStatus;
+  coloringStatus: TaskStatus;
+  postProcessingStatus: TaskStatus;
+}
+
+export interface EpisodeDetail extends Episode {
+  pages?: Page[];
+}
+
 export interface PaginationMeta {
   total: number;
   page: number;
@@ -148,19 +174,23 @@ export const apiClient = {
   },
 
   episodes: {
-    list: (projectId: string) =>
-      fetchApi<unknown[]>(`/projects/${projectId}/episodes`),
-    get: (id: string) => fetchApi<unknown>(`/episodes/${id}`),
+    list: (projectId: string, params?: { status?: EpisodeStatus }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.status) searchParams.set("status", params.status);
+      const query = searchParams.toString();
+      return fetchApi<Episode[]>(`/projects/${projectId}/episodes${query ? `?${query}` : ""}`);
+    },
+    get: (id: string) => fetchApi<EpisodeDetail>(`/episodes/${id}`),
   },
 
   pages: {
-    get: (id: string) => fetchApi<unknown>(`/pages/${id}`),
+    get: (id: string) => fetchApi<Page>(`/pages/${id}`),
     startTask: (pageId: string, taskType: string) =>
-      fetchApi<unknown>(`/pages/${pageId}/tasks/${taskType}/start`, {
+      fetchApi<Page>(`/pages/${pageId}/tasks/${taskType}/start`, {
         method: "POST",
       }),
     completeTask: (pageId: string, taskType: string) =>
-      fetchApi<unknown>(`/pages/${pageId}/tasks/${taskType}/complete`, {
+      fetchApi<Page>(`/pages/${pageId}/tasks/${taskType}/complete`, {
         method: "POST",
       }),
   },
