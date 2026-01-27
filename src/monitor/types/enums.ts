@@ -1,0 +1,34 @@
+export enum RiskLevel {
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL',
+}
+
+export enum AlertType {
+  RISK_LEVEL_CHANGE = 'RISK_LEVEL_CHANGE',
+  SEAL_DEADLINE_APPROACHING = 'SEAL_DEADLINE_APPROACHING',
+  VELOCITY_DEFICIT = 'VELOCITY_DEFICIT',
+  BUFFER_WARNING = 'BUFFER_WARNING',
+  EPISODE_DELAYED = 'EPISODE_DELAYED',
+}
+
+export enum AlertSeverity {
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR',
+  CRITICAL = 'CRITICAL',
+}
+
+export enum HealthStatus {
+  HEALTHY = 'HEALTHY',
+  ATTENTION = 'ATTENTION',
+  WARNING = 'WARNING',
+  CRITICAL = 'CRITICAL',
+}
+
+export enum TrendDirection {
+  IMPROVING = 'IMPROVING',
+  STABLE = 'STABLE',
+  DECLINING = 'DECLINING',
+}
