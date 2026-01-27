@@ -13,6 +13,7 @@ import {
   MilestoneController,
   MonitorController,
   HealthController,
+  AlertController,
 } from './controllers';
 
 @Module({
@@ -30,6 +31,7 @@ import {
     MilestoneController,
     MonitorController,
     HealthController,
+    AlertController,
   ],
   providers: [
     {

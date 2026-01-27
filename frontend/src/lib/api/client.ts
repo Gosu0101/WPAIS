@@ -58,10 +58,12 @@ export interface Project {
 export interface Alert {
   id: string;
   projectId: string;
-  severity: "INFO" | "WARNING" | "CRITICAL";
-  type: string;
+  severity: "INFO" | "WARNING" | "CRITICAL" | "ERROR";
+  alertType: string;
+  type: string; // alias for alertType
   message: string;
   acknowledged: boolean;
+  acknowledgedAt?: string | null;
   createdAt: string;
 }
 
@@ -224,14 +226,35 @@ export const apiClient = {
       fetchApi<unknown>(`/projects/${projectId}/velocity`),
     health: (projectId: string) =>
       fetchApi<unknown>(`/projects/${projectId}/health`),
-    alerts: (projectId: string, params?: { severity?: string; limit?: number }) => {
+    alerts: async (projectId: string, params?: { severity?: string; limit?: number }): Promise<AlertsResponse> => {
       const searchParams = new URLSearchParams();
       if (params?.severity) searchParams.set("severity", params.severity);
       if (params?.limit) searchParams.set("limit", params.limit.toString());
       const query = searchParams.toString();
-      return fetchApi<AlertsResponse>(
+      const response = await fetchApi<{ data: Array<{
+        id: string;
+        projectId: string;
+        alertType: string;
+        severity: string;
+        message: string;
+        acknowledgedAt?: string | null;
+        createdAt: string;
+      }>; meta: { total: number } }>(
         `/projects/${projectId}/alerts${query ? `?${query}` : ""}`
       );
+      
+      // Transform backend response to frontend format
+      const alerts: Alert[] = response.data.map(alert => ({
+        ...alert,
+        type: alert.alertType,
+        acknowledged: !!alert.acknowledgedAt,
+        severity: alert.severity as Alert['severity'],
+      }));
+      
+      return {
+        alerts,
+        total: response.meta.total,
+      };
     },
     acknowledgeAlert: (alertId: string) =>
       fetchApi<unknown>(`/alerts/${alertId}/acknowledge`, {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { BottomNav } from "./bottom-nav";
 import { cn } from "@/lib/utils";
 
 interface AppLayoutProps {
@@ -11,9 +12,40 @@ interface AppLayoutProps {
   subtitle?: string;
 }
 
+// 브레이크포인트 상수
+const BREAKPOINTS = {
+  md: 768,
+  lg: 1024,
+};
+
 export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
   const [selectedProjectId, setSelectedProjectId] = useState<string>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // 화면 크기에 따라 사이드바 접힘 상태 초기화
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      // 태블릿(md~lg)에서는 기본적으로 접힌 상태
+      if (width >= BREAKPOINTS.md && width < BREAKPOINTS.lg) {
+        setSidebarCollapsed(true);
+      } else if (width >= BREAKPOINTS.lg) {
+        // 데스크톱에서는 펼친 상태 유지 (사용자가 수동으로 접지 않은 경우)
+        // 사용자 선호도를 localStorage에서 확인
+        const savedCollapsed = localStorage.getItem("sidebarCollapsed");
+        if (savedCollapsed === null) {
+          setSidebarCollapsed(false);
+        }
+      }
+    };
+
+    // 초기 실행
+    handleResize();
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleProjectSelect = useCallback((projectId: string) => {
     setSelectedProjectId(projectId);
@@ -23,26 +55,34 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
     setSidebarOpen((prev) => !prev);
   }, []);
 
+  const handleCollapsedChange = useCallback((collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+    // 사용자 선호도 저장
+    localStorage.setItem("sidebarCollapsed", String(collapsed));
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       {/* 모바일 오버레이 */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* 사이드바 */}
+      {/* 사이드바 - 모바일에서는 슬라이드, 태블릿/데스크톱에서는 고정 */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <Sidebar
           selectedProjectId={selectedProjectId}
           onProjectSelect={handleProjectSelect}
+          collapsed={sidebarCollapsed}
+          onCollapsedChange={handleCollapsedChange}
         />
       </div>
 
@@ -55,9 +95,13 @@ export function AppLayout({ children, title, subtitle }: AppLayoutProps) {
           onMenuClick={handleMenuClick}
         />
         <main className="flex-1 overflow-auto">
-          <div className="container mx-auto p-6">{children}</div>
+          {/* 모바일에서 하단 네비게이션 공간 확보 */}
+          <div className="container mx-auto p-4 pb-20 md:p-6 md:pb-6">{children}</div>
         </main>
       </div>
+
+      {/* 모바일 하단 네비게이션 */}
+      <BottomNav projectId={selectedProjectId} />
     </div>
   );
 }

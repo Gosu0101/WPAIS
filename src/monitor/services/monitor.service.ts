@@ -182,6 +182,10 @@ export class MonitorService {
     return this.alertService.getAlertHistory(projectId, options);
   }
 
+  async acknowledgeAlert(alertId: string): Promise<Alert> {
+    return this.alertService.acknowledgeAlert(alertId);
+  }
+
   async getTrend(
     projectId: string,
     period: 'weekly' | 'monthly',

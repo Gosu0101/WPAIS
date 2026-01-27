@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Lock, ChevronRight } from "lucide-react";
+import { Lock, ChevronRight, Calendar, Clock } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Episode, EpisodeStatus } from "@/lib/api/client";
 import { useEpisodes } from "@/lib/hooks";
 import { EpisodeStatusBadge } from "./episode-status-badge";
@@ -83,7 +84,15 @@ export function EpisodeTable({ projectId }: EpisodeTableProps) {
         </span>
       </div>
 
-      <div className="rounded-md border">
+      {/* 모바일: 카드 레이아웃 */}
+      <div className="space-y-3 sm:hidden">
+        {episodes.map((episode) => (
+          <EpisodeCard key={episode.id} episode={episode} />
+        ))}
+      </div>
+
+      {/* 태블릿/데스크톱: 테이블 레이아웃 */}
+      <div className="hidden sm:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -103,6 +112,50 @@ export function EpisodeTable({ projectId }: EpisodeTableProps) {
         </Table>
       </div>
     </div>
+  );
+}
+
+function EpisodeCard({ episode }: { episode: Episode }) {
+  const dueDate = new Date(episode.dueDate);
+  const isOverdue = dueDate < new Date() && episode.status !== "COMPLETED";
+
+  return (
+    <Link href={`/episodes/${episode.id}`}>
+      <Card className="transition-colors hover:border-primary/50">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">
+                  EP.{episode.episodeNumber.toString().padStart(2, "0")}
+                </span>
+                {episode.isSealed && (
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
+                    <Lock className="mr-1 h-3 w-3" />
+                    봉인
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <span className={`flex items-center gap-1 ${isOverdue ? "text-destructive" : ""}`}>
+                  <Calendar className="h-3.5 w-3.5" />
+                  {format(dueDate, "MM.dd (EEE)", { locale: ko })}
+                  {isOverdue && <span className="text-xs">지연</span>}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {episode.duration}일
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <EpisodeStatusBadge status={episode.status} />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 

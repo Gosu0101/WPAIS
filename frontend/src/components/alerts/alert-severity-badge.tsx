@@ -4,7 +4,7 @@ import { AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type AlertSeverity = "INFO" | "WARNING" | "CRITICAL";
+type AlertSeverity = "INFO" | "WARNING" | "CRITICAL" | "ERROR";
 
 interface AlertSeverityBadgeProps {
   severity: AlertSeverity;
@@ -22,6 +22,11 @@ const severityConfig = {
     icon: AlertTriangle,
     label: "경고",
     className: "border-warning/50 bg-warning/10 text-warning",
+  },
+  ERROR: {
+    icon: AlertCircle,
+    label: "오류",
+    className: "border-orange-500/50 bg-orange-500/10 text-orange-500",
   },
   CRITICAL: {
     icon: AlertCircle,

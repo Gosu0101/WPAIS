@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Plus, Search, SortAsc, SortDesc } from "lucide-react";
 import { AppLayout } from "@/components/layout";
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useProjects } from "@/lib/hooks/use-projects";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
-import { Project, RiskLevel } from "@/lib/api/client";
+import { Project } from "@/lib/api/client";
 
 type SortField = "title" | "launchDate" | "createdAt";
 type SortOrder = "ASC" | "DESC";
@@ -55,8 +55,8 @@ export default function ProjectsPage() {
       <div className="space-y-6">
         {/* 툴바 */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 items-center gap-3">
-            <div className="relative flex-1 max-w-sm">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1 sm:max-w-sm">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="프로젝트 검색..."
@@ -66,36 +66,38 @@ export default function ProjectsPage() {
               />
             </div>
 
-            <Select
-              value={sortField}
-              onValueChange={(v) => setSortField(v as SortField)}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="정렬 기준" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="title">이름</SelectItem>
-                <SelectItem value="launchDate">런칭일</SelectItem>
-                <SelectItem value="createdAt">생성일</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select
+                value={sortField}
+                onValueChange={(v) => setSortField(v as SortField)}
+              >
+                <SelectTrigger className="w-[120px] sm:w-[140px]">
+                  <SelectValue placeholder="정렬 기준" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="title">이름</SelectItem>
+                  <SelectItem value="launchDate">런칭일</SelectItem>
+                  <SelectItem value="createdAt">생성일</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={toggleSortOrder}
-              title={sortOrder === "ASC" ? "오름차순" : "내림차순"}
-            >
-              {sortOrder === "ASC" ? (
-                <SortAsc className="h-4 w-4" />
-              ) : (
-                <SortDesc className="h-4 w-4" />
-              )}
-            </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={toggleSortOrder}
+                title={sortOrder === "ASC" ? "오름차순" : "내림차순"}
+              >
+                {sortOrder === "ASC" ? (
+                  <SortAsc className="h-4 w-4" />
+                ) : (
+                  <SortDesc className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
 
           <Link href="/projects/new">
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               새 프로젝트
             </Button>
@@ -104,7 +106,7 @@ export default function ProjectsPage() {
 
         {/* 프로젝트 그리드 */}
         {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <ProjectCardSkeleton key={i} />
             ))}
@@ -147,7 +149,7 @@ export default function ProjectsPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => (
               <ProjectCardWithData key={project.id} project={project} />
             ))}

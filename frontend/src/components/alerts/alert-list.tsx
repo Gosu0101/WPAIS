@@ -145,6 +145,7 @@ export function AlertList({
                 <SelectItem value="all">전체</SelectItem>
                 <SelectItem value="INFO">정보</SelectItem>
                 <SelectItem value="WARNING">경고</SelectItem>
+                <SelectItem value="ERROR">오류</SelectItem>
                 <SelectItem value="CRITICAL">위험</SelectItem>
               </SelectContent>
             </Select>

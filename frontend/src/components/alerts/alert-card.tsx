@@ -18,12 +18,14 @@ interface AlertCardProps {
 const severityIcons = {
   INFO: Info,
   WARNING: AlertTriangle,
+  ERROR: AlertCircle,
   CRITICAL: AlertCircle,
 };
 
 const severityColors = {
   INFO: "border-l-blue-500",
   WARNING: "border-l-warning",
+  ERROR: "border-l-orange-500",
   CRITICAL: "border-l-destructive",
 };
 
@@ -51,6 +53,7 @@ export function AlertCard({
                 "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
                 alert.severity === "INFO" && "bg-blue-500/10 text-blue-500",
                 alert.severity === "WARNING" && "bg-warning/10 text-warning",
+                alert.severity === "ERROR" && "bg-orange-500/10 text-orange-500",
                 alert.severity === "CRITICAL" && "bg-destructive/10 text-destructive"
               )}
             >
