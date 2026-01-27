@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Project } from './project.entity';
 
 export enum EpisodeStatus {
@@ -8,10 +8,12 @@ export enum EpisodeStatus {
 }
 
 @Entity('episodes')
+@Index(['projectId', 'dueDate'])
 export class Episode {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index('idx_episode_project_id')
   @Column()
   projectId: string;
 
@@ -22,6 +24,7 @@ export class Episode {
   @Column()
   episodeNumber: number;
 
+  @Index('idx_episode_due_date')
   @Column({ type: 'datetime' })
   dueDate: Date;
 

@@ -20,7 +20,7 @@ export class ProgressSnapshot {
   @Column('date')
   snapshotDate: Date;
 
-  @Column('jsonb')
+  @Column('simple-json')
   metrics: SnapshotMetrics;
 
   @Column('decimal', { precision: 5, scale: 2 })

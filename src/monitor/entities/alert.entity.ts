@@ -18,21 +18,19 @@ export class Alert {
   projectId: string;
 
   @Column({
-    type: 'enum',
-    enum: AlertType,
+    type: 'varchar',
   })
   alertType: AlertType;
 
   @Column({
-    type: 'enum',
-    enum: AlertSeverity,
+    type: 'varchar',
   })
   severity: AlertSeverity;
 
   @Column('text')
   message: string;
 
-  @Column('jsonb', { nullable: true })
+  @Column('simple-json', { nullable: true })
   metadata?: Record<string, unknown>;
 
   @CreateDateColumn()

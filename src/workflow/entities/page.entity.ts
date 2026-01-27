@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { TaskStatus } from '../types';
 import { Episode } from '../../scheduling/entities/episode.entity';
@@ -20,6 +21,7 @@ export class Page {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index('idx_page_episode_id')
   @Column('uuid')
   episodeId: string;
 
