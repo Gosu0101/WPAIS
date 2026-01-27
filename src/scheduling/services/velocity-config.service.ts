@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional, Inject } from '@nestjs/common';
 import { VelocityConfig, getDefaultVelocityConfig } from '../types';
+
+export const VELOCITY_CONFIG = 'VELOCITY_CONFIG';
 
 /**
  * VelocityConfigService - 적응 가속도 로직을 관리하는 서비스
@@ -12,7 +14,9 @@ import { VelocityConfig, getDefaultVelocityConfig } from '../types';
 export class VelocityConfigService {
   private config: VelocityConfig;
 
-  constructor(config?: VelocityConfig) {
+  constructor(
+    @Optional() @Inject(VELOCITY_CONFIG) config?: VelocityConfig
+  ) {
     this.config = config ?? getDefaultVelocityConfig();
   }
 

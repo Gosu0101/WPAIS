@@ -19,31 +19,29 @@ import {
 import { useCreateProject } from "@/lib/hooks/use-projects";
 
 interface FormErrors {
-  name?: string;
+  title?: string;
   launchDate?: string;
-  totalEpisodes?: string;
-  pagesPerEpisode?: string;
+  episodeCount?: string;
 }
 
 export default function NewProjectPage() {
   const router = useRouter();
   const createProject = useCreateProject();
 
-  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
   const [launchDate, setLaunchDate] = useState(
     format(addMonths(new Date(), 3), "yyyy-MM-dd")
   );
-  const [totalEpisodes, setTotalEpisodes] = useState("52");
-  const [pagesPerEpisode, setPagesPerEpisode] = useState("5");
+  const [episodeCount, setEpisodeCount] = useState("10");
   const [errors, setErrors] = useState<FormErrors>({});
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!name.trim()) {
-      newErrors.name = "프로젝트명을 입력해주세요.";
-    } else if (name.length > 100) {
-      newErrors.name = "프로젝트명은 100자 이내로 입력해주세요.";
+    if (!title.trim()) {
+      newErrors.title = "작품명을 입력해주세요.";
+    } else if (title.length > 100) {
+      newErrors.title = "작품명은 100자 이내로 입력해주세요.";
     }
 
     if (!launchDate) {
@@ -57,18 +55,11 @@ export default function NewProjectPage() {
       }
     }
 
-    const episodes = parseInt(totalEpisodes, 10);
+    const episodes = parseInt(episodeCount, 10);
     if (isNaN(episodes) || episodes < 1) {
-      newErrors.totalEpisodes = "에피소드 수는 1 이상이어야 합니다.";
-    } else if (episodes > 1000) {
-      newErrors.totalEpisodes = "에피소드 수는 1000 이하여야 합니다.";
-    }
-
-    const pages = parseInt(pagesPerEpisode, 10);
-    if (isNaN(pages) || pages < 1) {
-      newErrors.pagesPerEpisode = "페이지 수는 1 이상이어야 합니다.";
-    } else if (pages > 100) {
-      newErrors.pagesPerEpisode = "페이지 수는 100 이하여야 합니다.";
+      newErrors.episodeCount = "에피소드 수는 1 이상이어야 합니다.";
+    } else if (episodes > 100) {
+      newErrors.episodeCount = "에피소드 수는 100 이하여야 합니다.";
     }
 
     setErrors(newErrors);
@@ -82,10 +73,9 @@ export default function NewProjectPage() {
 
     try {
       await createProject.mutateAsync({
-        name: name.trim(),
+        title: title.trim(),
         launchDate,
-        totalEpisodes: parseInt(totalEpisodes, 10),
-        pagesPerEpisode: parseInt(pagesPerEpisode, 10),
+        episodeCount: parseInt(episodeCount, 10),
       });
       router.push("/projects");
     } catch (error) {
@@ -115,16 +105,16 @@ export default function NewProjectPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name">프로젝트명 *</Label>
+                <Label htmlFor="title">작품명 *</Label>
                 <Input
-                  id="name"
+                  id="title"
                   placeholder="예: 나 혼자만 레벨업"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className={errors.name ? "border-destructive" : ""}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className={errors.title ? "border-destructive" : ""}
                 />
-                {errors.name && (
-                  <p className="text-sm text-destructive">{errors.name}</p>
+                {errors.title && (
+                  <p className="text-sm text-destructive">{errors.title}</p>
                 )}
               </div>
 
@@ -145,43 +135,25 @@ export default function NewProjectPage() {
                 </p>
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="totalEpisodes">총 에피소드 수 *</Label>
-                  <Input
-                    id="totalEpisodes"
-                    type="number"
-                    min="1"
-                    max="1000"
-                    value={totalEpisodes}
-                    onChange={(e) => setTotalEpisodes(e.target.value)}
-                    className={errors.totalEpisodes ? "border-destructive" : ""}
-                  />
-                  {errors.totalEpisodes && (
-                    <p className="text-sm text-destructive">
-                      {errors.totalEpisodes}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pagesPerEpisode">에피소드당 페이지 수</Label>
-                  <Input
-                    id="pagesPerEpisode"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={pagesPerEpisode}
-                    onChange={(e) => setPagesPerEpisode(e.target.value)}
-                    className={errors.pagesPerEpisode ? "border-destructive" : ""}
-                  />
-                  {errors.pagesPerEpisode && (
-                    <p className="text-sm text-destructive">
-                      {errors.pagesPerEpisode}
-                    </p>
-                  )}
-                  <p className="text-sm text-muted-foreground">기본값: 5페이지</p>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="episodeCount">런칭 시 확보할 에피소드 수</Label>
+                <Input
+                  id="episodeCount"
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={episodeCount}
+                  onChange={(e) => setEpisodeCount(e.target.value)}
+                  className={errors.episodeCount ? "border-destructive" : ""}
+                />
+                {errors.episodeCount && (
+                  <p className="text-sm text-destructive">
+                    {errors.episodeCount}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  기본값: 10화 (봉인 7화 + 비축 3화)
+                </p>
               </div>
 
               {createProject.error && (

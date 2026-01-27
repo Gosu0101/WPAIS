@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Calendar, TrendingUp, AlertTriangle } from "lucide-react";
+import { Calendar, Clock, AlertTriangle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -53,8 +53,12 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const riskConfig = riskLevelConfig[riskLevel];
   const launchDate = new Date(project.launchDate);
+  const sealDate = new Date(project.sealDate);
   const daysUntilLaunch = Math.ceil(
     (launchDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  );
+  const daysUntilSeal = Math.ceil(
+    (sealDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   );
 
   return (
@@ -64,7 +68,7 @@ export function ProjectCard({
           <div className="flex items-start justify-between">
             <div className="space-y-1">
               <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                {project.name}
+                {project.title}
               </CardTitle>
               <CardDescription className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />
@@ -91,8 +95,8 @@ export function ProjectCard({
 
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-1.5 text-muted-foreground">
-              <TrendingUp className="h-3.5 w-3.5" />
-              <span>총 {project.totalEpisodes}화</span>
+              <Clock className="h-3.5 w-3.5" />
+              <span>봉인일 D{daysUntilSeal > 0 ? `-${daysUntilSeal}` : `+${Math.abs(daysUntilSeal)}`}</span>
             </div>
             <span
               className={cn(

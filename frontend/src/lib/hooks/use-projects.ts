@@ -3,10 +3,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, CreateProjectDto, UpdateProjectDto } from "../api/client";
 
-export function useProjects() {
+export function useProjects(params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'ASC' | 'DESC'; title?: string }) {
   return useQuery({
-    queryKey: ["projects"],
-    queryFn: () => apiClient.projects.list(),
+    queryKey: ["projects", params],
+    queryFn: () => apiClient.projects.list(params),
   });
 }
 

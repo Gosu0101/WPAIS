@@ -23,25 +23,34 @@ async function fetchApi<T>(
 }
 
 // Types
+export interface VelocityConfig {
+  backgroundWeight: number;
+  lineArtWeight: number;
+  coloringWeight: number;
+  postProcessingWeight: number;
+}
+
 export interface CreateProjectDto {
-  name: string;
+  title: string;
   launchDate: string;
-  totalEpisodes: number;
-  pagesPerEpisode?: number;
+  episodeCount?: number;
+  velocityConfig?: VelocityConfig;
 }
 
 export interface UpdateProjectDto {
-  name?: string;
+  title?: string;
   launchDate?: string;
-  totalEpisodes?: number;
 }
 
 export interface Project {
   id: string;
-  name: string;
+  title: string;
   launchDate: string;
-  totalEpisodes: number;
-  pagesPerEpisode: number;
+  sealDate: string;
+  productionStartDate: string;
+  hiringStartDate: string;
+  planningStartDate: string;
+  velocityConfig: VelocityConfig;
   createdAt: string;
   updatedAt: string;
 }
@@ -95,9 +104,32 @@ export interface AlertsResponse {
   total: number;
 }
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: PaginationMeta;
+}
+
 export const apiClient = {
   projects: {
-    list: () => fetchApi<Project[]>("/projects"),
+    list: (params?: { page?: number; limit?: number; sortBy?: string; sortOrder?: 'ASC' | 'DESC'; title?: string }) => {
+      const searchParams = new URLSearchParams();
+      if (params?.page) searchParams.set("page", params.page.toString());
+      if (params?.limit) searchParams.set("limit", params.limit.toString());
+      if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
+      if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
+      if (params?.title) searchParams.set("title", params.title);
+      const query = searchParams.toString();
+      return fetchApi<PaginatedResponse<Project>>(`/projects${query ? `?${query}` : ""}`);
+    },
     get: (id: string) => fetchApi<Project>(`/projects/${id}`),
     create: (data: CreateProjectDto) =>
       fetchApi<Project>("/projects", {

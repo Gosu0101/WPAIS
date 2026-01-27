@@ -68,9 +68,10 @@ interface SidebarProps {
 
 export function Sidebar({ selectedProjectId, onProjectSelect }: SidebarProps) {
   const pathname = usePathname();
-  const { data: projects, isLoading } = useProjects();
+  const { data: projectsResponse, isLoading } = useProjects();
 
-  const selectedProject = projects?.find((p) => p.id === selectedProjectId);
+  const projects = projectsResponse?.data ?? [];
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r border-border bg-card">
@@ -94,13 +95,13 @@ export function Sidebar({ selectedProjectId, onProjectSelect }: SidebarProps) {
               <span className="truncate">
                 {isLoading
                   ? "로딩 중..."
-                  : selectedProject?.name || "프로젝트 선택"}
+                  : selectedProject?.title || "프로젝트 선택"}
               </span>
               <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="start">
-            {projects?.map((project) => (
+            {projects.map((project) => (
               <DropdownMenuItem
                 key={project.id}
                 onClick={() => onProjectSelect?.(project.id)}
@@ -109,10 +110,10 @@ export function Sidebar({ selectedProjectId, onProjectSelect }: SidebarProps) {
                   project.id === selectedProjectId && "bg-accent"
                 )}
               >
-                <span className="truncate">{project.name}</span>
+                <span className="truncate">{project.title}</span>
               </DropdownMenuItem>
             ))}
-            {projects && projects.length > 0 && <DropdownMenuSeparator />}
+            {projects.length > 0 && <DropdownMenuSeparator />}
             <DropdownMenuItem asChild>
               <Link href="/projects/new" className="cursor-pointer">
                 <Plus className="mr-2 h-4 w-4" />

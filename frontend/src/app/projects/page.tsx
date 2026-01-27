@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Plus, Search, SortAsc, SortDesc, Filter } from "lucide-react";
+import { Plus, Search, SortAsc, SortDesc } from "lucide-react";
 import { AppLayout } from "@/components/layout";
 import { ProjectCard, ProjectCardSkeleton } from "@/components/projects";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,8 @@ import { useProjects } from "@/lib/hooks/use-projects";
 import { useDashboard } from "@/lib/hooks/use-dashboard";
 import { Project, RiskLevel } from "@/lib/api/client";
 
-type SortField = "name" | "launchDate" | "progress";
-type SortOrder = "asc" | "desc";
-type FilterRisk = "all" | RiskLevel;
+type SortField = "title" | "launchDate" | "createdAt";
+type SortOrder = "ASC" | "DESC";
 
 function ProjectCardWithData({ project }: { project: Project }) {
   const { data: dashboard } = useDashboard(project.id);
@@ -35,47 +34,20 @@ function ProjectCardWithData({ project }: { project: Project }) {
 }
 
 export default function ProjectsPage() {
-  const { data: projects, isLoading, error } = useProjects();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("launchDate");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [filterRisk, setFilterRisk] = useState<FilterRisk>("all");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("ASC");
 
-  const filteredAndSortedProjects = useMemo(() => {
-    if (!projects) return [];
+  const { data: projectsResponse, isLoading, error } = useProjects({
+    sortBy: sortField,
+    sortOrder: sortOrder,
+    title: searchQuery || undefined,
+  });
 
-    let result = [...projects];
-
-    // 검색 필터
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter((p) => p.name.toLowerCase().includes(query));
-    }
-
-    // 정렬
-    result.sort((a, b) => {
-      let comparison = 0;
-      switch (sortField) {
-        case "name":
-          comparison = a.name.localeCompare(b.name);
-          break;
-        case "launchDate":
-          comparison =
-            new Date(a.launchDate).getTime() -
-            new Date(b.launchDate).getTime();
-          break;
-        case "progress":
-          comparison = a.totalEpisodes - b.totalEpisodes;
-          break;
-      }
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
-
-    return result;
-  }, [projects, searchQuery, sortField, sortOrder]);
+  const projects = projectsResponse?.data ?? [];
 
   const toggleSortOrder = () => {
-    setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    setSortOrder((prev) => (prev === "ASC" ? "DESC" : "ASC"));
   };
 
   return (
@@ -102,9 +74,9 @@ export default function ProjectsPage() {
                 <SelectValue placeholder="정렬 기준" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="name">이름</SelectItem>
+                <SelectItem value="title">이름</SelectItem>
                 <SelectItem value="launchDate">런칭일</SelectItem>
-                <SelectItem value="progress">에피소드 수</SelectItem>
+                <SelectItem value="createdAt">생성일</SelectItem>
               </SelectContent>
             </Select>
 
@@ -112,9 +84,9 @@ export default function ProjectsPage() {
               variant="outline"
               size="icon"
               onClick={toggleSortOrder}
-              title={sortOrder === "asc" ? "오름차순" : "내림차순"}
+              title={sortOrder === "ASC" ? "오름차순" : "내림차순"}
             >
-              {sortOrder === "asc" ? (
+              {sortOrder === "ASC" ? (
                 <SortAsc className="h-4 w-4" />
               ) : (
                 <SortDesc className="h-4 w-4" />
@@ -146,7 +118,7 @@ export default function ProjectsPage() {
               {error instanceof Error ? error.message : "알 수 없는 오류"}
             </p>
           </div>
-        ) : filteredAndSortedProjects.length === 0 ? (
+        ) : projects.length === 0 ? (
           <div className="rounded-lg border border-border bg-card p-12 text-center">
             {searchQuery ? (
               <>
@@ -176,16 +148,16 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredAndSortedProjects.map((project) => (
+            {projects.map((project) => (
               <ProjectCardWithData key={project.id} project={project} />
             ))}
           </div>
         )}
 
         {/* 프로젝트 수 표시 */}
-        {!isLoading && !error && filteredAndSortedProjects.length > 0 && (
+        {!isLoading && !error && projects.length > 0 && (
           <p className="text-sm text-muted-foreground text-center">
-            총 {filteredAndSortedProjects.length}개 프로젝트
+            총 {projectsResponse?.meta?.total ?? projects.length}개 프로젝트
             {searchQuery && ` (검색: "${searchQuery}")`}
           </p>
         )}
