@@ -24,26 +24,26 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
 - [x] 2. Checkpoint - 기본 설정 완료
   - PostgreSQL 연결 테스트
 
-- [ ] 3. AppModule TypeORM 통합
-  - [ ] 3.1 AppModule에 TypeOrmModule 추가
+- [x] 3. AppModule TypeORM 통합
+  - [x] 3.1 AppModule에 TypeOrmModule 추가
     - ConfigService 기반 동적 설정
     - _Requirements: 1.1, 1.2_
 
-  - [ ] 3.2 엔티티 등록 확인
+  - [x] 3.2 엔티티 등록 확인
     - 모든 엔티티가 TypeORM에 등록되었는지 확인
     - _Requirements: 1.1_
 
-- [ ] 4. 엔티티 PostgreSQL 최적화
-  - [ ] 4.1 UUID 컬럼 타입 변경
+- [x] 4. 엔티티 PostgreSQL 최적화
+  - [x] 4.1 UUID 컬럼 타입 변경
     - @PrimaryGeneratedColumn('uuid') 확인
     - _Requirements: 3.1_
 
-  - [ ] 4.2 JSON 컬럼을 JSONB로 변경
+  - [x] 4.2 JSON 컬럼을 JSONB로 변경
     - velocityConfig, metadata, metrics 컬럼
     - @Column({ type: 'jsonb' }) 적용
     - _Requirements: 3.2_
 
-  - [ ] 4.3 인덱스 데코레이터 추가
+  - [x] 4.3 인덱스 데코레이터 추가
     - @Index() 데코레이터로 자주 조회되는 컬럼에 인덱스
     - _Requirements: 3.3_
 
