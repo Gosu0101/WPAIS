@@ -109,8 +109,15 @@ WPAIS 프론트엔드 대시보드 구현 계획입니다. Next.js 14 App Router
     - 권장 조치 목록
     - _Requirements: 2.7_
 
-- [ ] 7. Checkpoint - 대시보드 완료
-  - 모든 위젯 데이터 연동 확인
+- [x] 7. Checkpoint - 대시보드 완료
+  - 모든 위젯 데이터 연동 확인 ✓
+    - BufferStatusCard → useBufferStatus → /projects/:id/buffer-status ✓
+    - SealCountdownCard → useProject → /projects/:id ✓
+    - HealthScoreCard → useHealth → /projects/:id/health ✓
+    - ProgressChart → useDashboard → /projects/:id/dashboard ✓
+    - RiskAnalysisCard → useRiskAnalysis → /projects/:id/risk ✓
+    - VelocityCard → useVelocity → /projects/:id/velocity ✓
+  - 프론트엔드 빌드 성공 ✓
 
 - [ ] 8. 에피소드 관리
   - [ ] 8.1 에피소드 목록 컴포넌트
@@ -205,11 +212,12 @@ WPAIS 프론트엔드 대시보드 구현 계획입니다. Next.js 14 App Router
 | 레이아웃 | 3/3 | 0 | 100% |
 | 프로젝트 목록 | 3/3 | 0 | 100% |
 | Checkpoint 5 | 1/1 | 0 | 100% |
-| 대시보드 | 0/7 | 7 | 0% |
+| 대시보드 | 7/7 | 0 | 100% |
+| Checkpoint 7 | 1/1 | 0 | 100% |
 | 에피소드 | 0/2 | 2 | 0% |
 | 워크플로우 | 0/4 | 4 | 0% |
 | 마일스톤 | 0/2 | 2 | 0% |
 | 알림 | 0/3 | 3 | 0% |
 | 반응형 | 0/2 | 2 | 0% |
 
-**다음 작업**: Task 6.1 대시보드 레이아웃
+**다음 작업**: Task 8.1 에피소드 목록 컴포넌트
