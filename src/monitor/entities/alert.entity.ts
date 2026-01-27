@@ -36,6 +36,6 @@ export class Alert {
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column('timestamp', { nullable: true })
+  @Column({ nullable: true })
   acknowledgedAt?: Date;
 }

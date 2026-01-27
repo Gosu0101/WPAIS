@@ -12,22 +12,22 @@ export class Project {
   title: string;
 
   @Index('idx_project_launch_date')
-  @Column({ type: 'datetime' })
+  @Column()
   launchDate: Date;
 
-  @Column({ type: 'datetime' })
+  @Column()
   sealDate: Date;
 
-  @Column({ type: 'datetime' })
+  @Column()
   productionStartDate: Date;
 
-  @Column({ type: 'datetime' })
+  @Column()
   hiringStartDate: Date;
 
-  @Column({ type: 'datetime' })
+  @Column()
   planningStartDate: Date;
 
-  @Column({ type: 'simple-json' })
+  @Column('simple-json')
   velocityConfig: VelocityConfig;
 
   @OneToMany(() => Episode, (episode) => episode.project)

@@ -31,13 +31,13 @@ export class Milestone {
   })
   type: MilestoneType;
 
-  @Column({ type: 'datetime' })
+  @Column()
   targetDate: Date;
 
   @Column({ default: false })
   isCompleted: boolean;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column('datetime', { nullable: true })
   completedAt: Date | null;
 
   @CreateDateColumn()

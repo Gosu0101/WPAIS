@@ -25,7 +25,7 @@ export class Episode {
   episodeNumber: number;
 
   @Index('idx_episode_due_date')
-  @Column({ type: 'datetime' })
+  @Column()
   dueDate: Date;
 
   @Column()
