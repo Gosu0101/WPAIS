@@ -64,11 +64,11 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
     - _Requirements: 2.2_
 
 - [ ] 7. 마이그레이션 실행
-  - [ ] 7.1 PostgreSQL 데이터베이스 생성
+  - [x] 7.1 PostgreSQL 데이터베이스 생성
     - wpais_db 데이터베이스 생성 확인
     - _Requirements: 2.3_
 
-  - [ ] 7.2 마이그레이션 실행
+  - [x] 7.2 마이그레이션 실행
     - npm run migration:run
     - _Requirements: 2.3_
 

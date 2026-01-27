@@ -37,7 +37,7 @@ export class Milestone {
   @Column({ default: false })
   isCompleted: boolean;
 
-  @Column('datetime', { nullable: true })
+  @Column({ nullable: true })
   completedAt: Date | null;
 
   @CreateDateColumn()
