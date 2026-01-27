@@ -47,19 +47,19 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
     - @Index() 데코레이터로 자주 조회되는 컬럼에 인덱스
     - _Requirements: 3.3_
 
-- [-] 5. Checkpoint - 엔티티 최적화 완료
+- [x] 5. Checkpoint - 엔티티 최적화 완료
   - 엔티티 변경사항 검토
 
-- [ ] 6. TypeORM CLI 마이그레이션 설정
-  - [ ] 6.1 데이터소스 설정 파일 생성
+- [x] 6. TypeORM CLI 마이그레이션 설정
+  - [x] 6.1 데이터소스 설정 파일 생성
     - src/config/typeorm.config.ts (CLI용)
     - _Requirements: 2.1_
 
-  - [ ] 6.2 package.json 스크립트 추가
+  - [x] 6.2 package.json 스크립트 추가
     - migration:generate, migration:run, migration:revert
     - _Requirements: 2.1_
 
-  - [ ] 6.3 초기 마이그레이션 생성
+  - [x] 6.3 초기 마이그레이션 생성
     - npm run migration:generate -- -n InitialSchema
     - _Requirements: 2.2_
 
@@ -104,10 +104,11 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
 | 구분 | 완료 | 미완료 | 진행률 |
 |------|------|--------|--------|
 | 기본 설정 | 3/3 | 0 | 100% |
-| TypeORM 통합 | 0/2 | 2 | 0% |
-| 엔티티 최적화 | 0/3 | 3 | 0% |
-| 마이그레이션 | 0/5 | 5 | 0% |
+| TypeORM 통합 | 2/2 | 0 | 100% |
+| 엔티티 최적화 | 3/3 | 0 | 100% |
+| 마이그레이션 설정 | 3/3 | 0 | 100% |
+| 마이그레이션 실행 | 0/2 | 2 | 0% |
 | 테스트 환경 | 0/2 | 2 | 0% |
 | 헬스체크 | 0/1 | 1 | 0% |
 
-**다음 작업**: Task 3.1 AppModule에 TypeOrmModule 추가
+**다음 작업**: Task 7.1 PostgreSQL 데이터베이스 생성 확인
