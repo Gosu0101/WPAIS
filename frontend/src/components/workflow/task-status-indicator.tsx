@@ -2,12 +2,13 @@
 
 import { TaskStatus } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
-import { Lock, Circle, Play, CheckCircle } from "lucide-react";
+import { Lock, Circle, Play, CheckCircle, Loader2 } from "lucide-react";
 
 interface TaskStatusIndicatorProps {
   status: TaskStatus;
   size?: "sm" | "md" | "lg";
   showLabel?: boolean;
+  isLoading?: boolean;
 }
 
 const statusConfig: Record<TaskStatus, { 
@@ -51,11 +52,12 @@ const sizeConfig = {
 export function TaskStatusIndicator({ 
   status, 
   size = "md", 
-  showLabel = false 
+  showLabel = false,
+  isLoading = false,
 }: TaskStatusIndicatorProps) {
   const config = statusConfig[status];
   const sizes = sizeConfig[size];
-  const Icon = config.icon;
+  const Icon = isLoading ? Loader2 : config.icon;
 
   return (
     <div className={cn("flex items-center gap-1.5", showLabel && "gap-2")}>
@@ -64,11 +66,15 @@ export function TaskStatusIndicator({
         sizes.padding,
         config.bgClassName
       )}>
-        <Icon className={cn(sizes.icon, config.className)} />
+        <Icon className={cn(
+          sizes.icon, 
+          config.className,
+          isLoading && "animate-spin"
+        )} />
       </div>
       {showLabel && (
         <span className={cn(sizes.text, config.className)}>
-          {config.label}
+          {isLoading ? "처리 중..." : config.label}
         </span>
       )}
     </div>
