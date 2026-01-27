@@ -89,7 +89,7 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
     - GET /health에 DB 연결 상태 포함
     - _Requirements: 5.1_
 
-- [ ] 11. Final checkpoint - PostgreSQL 마이그레이션 완료
+- [x] 11. Final checkpoint - PostgreSQL 마이그레이션 완료
   - 전체 테스트 실행
   - API 동작 확인
 
@@ -109,6 +109,6 @@ WPAIS 백엔드를 SQLite에서 PostgreSQL로 마이그레이션합니다.
 | 마이그레이션 설정 | 3/3 | 0 | 100% |
 | 마이그레이션 실행 | 2/2 | 0 | 100% |
 | 테스트 환경 | 2/2 | 0 | 100% |
-| 헬스체크 | 0/1 | 1 | 0% |
+| 헬스체크 | 1/1 | 0 | 100% |
 
-**다음 작업**: Task 10.1 DB 헬스체크 엔드포인트 구현
+**PostgreSQL 마이그레이션 완료!**
