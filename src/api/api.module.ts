@@ -5,6 +5,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { SchedulingModule, Project, Episode, Milestone } from '../scheduling';
 import { WorkflowModule, Page } from '../workflow';
 import { MonitorModule } from '../monitor';
+import { NotificationModule } from '../notification';
 import { HttpExceptionFilter } from './filters';
 import {
   ProjectController,
@@ -16,6 +17,9 @@ import {
   AlertController,
 } from './controllers';
 import { CalendarController, ProjectCalendarController } from './controllers/calendar.controller';
+import { NotificationController } from './controllers/notification.controller';
+import { ProjectMemberController } from './controllers/project-member.controller';
+import { NotificationSettingController } from './controllers/notification-setting.controller';
 import { CalendarService } from './services/calendar.service';
 
 @Module({
@@ -25,6 +29,7 @@ import { CalendarService } from './services/calendar.service';
     SchedulingModule,
     WorkflowModule,
     MonitorModule,
+    NotificationModule,
   ],
   controllers: [
     ProjectController,
@@ -36,6 +41,9 @@ import { CalendarService } from './services/calendar.service';
     AlertController,
     CalendarController,
     ProjectCalendarController,
+    NotificationController,
+    ProjectMemberController,
+    NotificationSettingController,
   ],
   providers: [
     {
