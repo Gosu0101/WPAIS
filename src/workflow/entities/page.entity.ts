@@ -66,16 +66,16 @@ export class Page {
   postProcessingStatus: TaskStatus;
 
   // 공정별 마감일 (에피소드 시작일 기준으로 계산)
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   backgroundDueDate: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   lineArtDueDate: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   coloringDueDate: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: 'datetime', nullable: true })
   postProcessingDueDate: Date | null;
 
   @CreateDateColumn()

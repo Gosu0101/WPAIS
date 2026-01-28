@@ -52,7 +52,8 @@ describe('API E2E Tests', () => {
     }).compile();
 
     app = module.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true }));
+    app.setGlobalPrefix('api');
+    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
