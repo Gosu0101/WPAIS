@@ -31,7 +31,7 @@ import { Repository, Like } from 'typeorm';
 import { Project } from '../../scheduling/entities';
 
 @ApiTags('projects')
-@Controller('api/projects')
+@Controller('projects')
 export class ProjectController {
   constructor(
     private readonly projectManagerService: ProjectManagerService,

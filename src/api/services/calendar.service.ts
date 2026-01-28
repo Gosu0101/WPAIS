@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In } from 'typeorm';
-import { Episode, EpisodeStatus } from '../../scheduling/entities/episode.entity';
+import { Episode } from '../../scheduling/entities/episode.entity';
 import { Milestone } from '../../scheduling/entities/milestone.entity';
 import { Project } from '../../scheduling/entities/project.entity';
 import { Page } from '../../workflow/entities/page.entity';
@@ -191,21 +191,28 @@ export class CalendarService {
       if (!episode) continue;
 
       // IN_PROGRESS 또는 READY 상태의 작업만 표시
-      const taskTypes: Array<{ type: 'BACKGROUND' | 'LINE_ART' | 'COLORING' | 'POST_PROCESSING'; status: TaskStatus }> = [
-        { type: 'BACKGROUND', status: page.backgroundStatus },
-        { type: 'LINE_ART', status: page.lineArtStatus },
-        { type: 'COLORING', status: page.coloringStatus },
-        { type: 'POST_PROCESSING', status: page.postProcessingStatus },
+      const taskTypes: Array<{ 
+        type: 'BACKGROUND' | 'LINE_ART' | 'COLORING' | 'POST_PROCESSING'; 
+        status: TaskStatus;
+        dueDate: Date | null;
+      }> = [
+        { type: 'BACKGROUND', status: page.backgroundStatus, dueDate: page.backgroundDueDate },
+        { type: 'LINE_ART', status: page.lineArtStatus, dueDate: page.lineArtDueDate },
+        { type: 'COLORING', status: page.coloringStatus, dueDate: page.coloringDueDate },
+        { type: 'POST_PROCESSING', status: page.postProcessingStatus, dueDate: page.postProcessingDueDate },
       ];
 
       for (const task of taskTypes) {
         // LOCKED과 DONE 상태는 제외 (활성 작업만 표시)
         if (task.status === TaskStatus.LOCKED || task.status === TaskStatus.DONE) continue;
 
+        // 공정별 마감일 사용 (없으면 에피소드 마감일 fallback)
+        const taskDueDate = task.dueDate || episode.dueDate;
+
         events.push({
           id: `${page.id}-${task.type}`,
           title: `EP${episode.episodeNumber} P${page.pageNumber} ${this.getTaskTypeLabel(task.type)}`,
-          start: episode.dueDate.toISOString(),
+          start: taskDueDate.toISOString(),
           allDay: true,
           type: 'task',
           projectId: episode.projectId,

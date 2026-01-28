@@ -15,7 +15,7 @@ import { MilestoneResponseDto } from '../dto/milestone';
 import { ErrorResponseDto } from '../dto/common';
 
 @ApiTags('milestones')
-@Controller('api/projects/:projectId/milestones')
+@Controller('projects/:projectId/milestones')
 export class MilestoneController {
   constructor(
     private readonly projectManagerService: ProjectManagerService,

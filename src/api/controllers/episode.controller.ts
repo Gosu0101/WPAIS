@@ -22,7 +22,7 @@ import { PageResponseDto } from '../dto/page';
 import { ErrorResponseDto } from '../dto/common';
 
 @ApiTags('episodes')
-@Controller('api')
+@Controller()
 export class EpisodeController {
   constructor(
     @InjectRepository(Episode)

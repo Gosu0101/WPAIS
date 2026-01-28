@@ -17,7 +17,7 @@ import { MonitorService } from '../../monitor/services/monitor.service';
 import { ErrorResponseDto } from '../dto/common';
 
 @ApiTags('alerts')
-@Controller('api/alerts')
+@Controller('alerts')
 export class AlertController {
   constructor(private readonly monitorService: MonitorService) {}
 

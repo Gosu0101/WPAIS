@@ -26,7 +26,7 @@ import {
 import { PaginatedResponse, ErrorResponseDto } from '../dto/common';
 
 @ApiTags('monitor')
-@Controller('api/projects/:projectId')
+@Controller('projects/:projectId')
 export class MonitorController {
   constructor(private readonly monitorService: MonitorService) {}
 

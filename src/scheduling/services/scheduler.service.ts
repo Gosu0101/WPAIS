@@ -389,4 +389,69 @@ export class SchedulerService {
     // 새로운 런칭일로 전체 스케줄 재계산
     return this.calculateMasterSchedule(newLaunchDate, episodeCount);
   }
+
+  /**
+   * 공정별 마감일을 계산합니다.
+   * 
+   * 에피소드 기간을 4개 공정(배경, 선화, 채색, 후보정)에 균등 분배합니다.
+   * 각 공정은 순차적으로 진행되므로 마감일이 누적됩니다.
+   * 
+   * 예시 (14일 에피소드, 시작일 1월 1일):
+   * - 배경 마감: 1월 4일 (3.5일 후)
+   * - 선화 마감: 1월 8일 (7일 후)
+   * - 채색 마감: 1월 11일 (10.5일 후)
+   * - 후보정 마감: 1월 15일 (14일 후 = 에피소드 마감일)
+   * 
+   * @param episodeStartDate 에피소드 시작일
+   * @param episodeDuration 에피소드 제작 기간 (일 단위)
+   * @returns 공정별 마감일 객체
+   */
+  calculateTaskDueDates(
+    episodeStartDate: Date,
+    episodeDuration: number,
+  ): {
+    backgroundDueDate: Date;
+    lineArtDueDate: Date;
+    coloringDueDate: Date;
+    postProcessingDueDate: Date;
+  } {
+    // 각 공정에 25%씩 균등 분배
+    const taskDuration = episodeDuration / 4;
+    
+    const backgroundDueDate = new Date(episodeStartDate);
+    backgroundDueDate.setDate(backgroundDueDate.getDate() + Math.ceil(taskDuration));
+    
+    const lineArtDueDate = new Date(episodeStartDate);
+    lineArtDueDate.setDate(lineArtDueDate.getDate() + Math.ceil(taskDuration * 2));
+    
+    const coloringDueDate = new Date(episodeStartDate);
+    coloringDueDate.setDate(coloringDueDate.getDate() + Math.ceil(taskDuration * 3));
+    
+    const postProcessingDueDate = new Date(episodeStartDate);
+    postProcessingDueDate.setDate(postProcessingDueDate.getDate() + episodeDuration);
+    
+    return {
+      backgroundDueDate,
+      lineArtDueDate,
+      coloringDueDate,
+      postProcessingDueDate,
+    };
+  }
+
+  /**
+   * 에피소드 스케줄에서 공정별 마감일을 계산합니다.
+   * 
+   * @param episodeSchedule 에피소드 스케줄
+   * @returns 공정별 마감일 객체
+   */
+  calculateTaskDueDatesFromSchedule(
+    episodeSchedule: EpisodeSchedule,
+  ): {
+    backgroundDueDate: Date;
+    lineArtDueDate: Date;
+    coloringDueDate: Date;
+    postProcessingDueDate: Date;
+  } {
+    return this.calculateTaskDueDates(episodeSchedule.startDate, episodeSchedule.duration);
+  }
 }

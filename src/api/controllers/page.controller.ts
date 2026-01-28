@@ -25,7 +25,7 @@ import { ErrorResponseDto } from '../dto/common';
 import { Episode, EpisodeStatus } from '../../scheduling/entities';
 
 @ApiTags('pages')
-@Controller('api/pages')
+@Controller('pages')
 export class PageController {
   constructor(
     @InjectRepository(Page)
