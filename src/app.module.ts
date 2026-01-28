@@ -9,6 +9,7 @@ import { SchedulingModule } from './scheduling';
 import { WorkflowModule } from './workflow';
 import { MonitorModule } from './monitor';
 import { NotificationModule } from './notification';
+import { AuthModule } from './auth';
 import { ApiModule } from './api/api.module';
 
 @Module({
@@ -25,6 +26,7 @@ import { ApiModule } from './api/api.module';
     WorkflowModule,
     MonitorModule,
     NotificationModule,
+    AuthModule,
     ApiModule,
   ],
 })

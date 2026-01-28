@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TerminusModule } from '@nestjs/terminus';
 import { SchedulingModule, Project, Episode, Milestone } from '../scheduling';
 import { WorkflowModule, Page } from '../workflow';
 import { MonitorModule } from '../monitor';
 import { NotificationModule } from '../notification';
+import { AuthModule, JwtAuthGuard } from '../auth';
 import { HttpExceptionFilter } from './filters';
 import {
   ProjectController,
@@ -30,6 +31,7 @@ import { CalendarService } from './services/calendar.service';
     WorkflowModule,
     MonitorModule,
     NotificationModule,
+    AuthModule,
   ],
   controllers: [
     ProjectController,
@@ -49,6 +51,10 @@ import { CalendarService } from './services/calendar.service';
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
     },
     CalendarService,
   ],

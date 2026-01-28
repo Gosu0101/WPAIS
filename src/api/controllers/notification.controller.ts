@@ -11,6 +11,7 @@ import {
 import { NotificationService } from '../../notification/services/notification.service';
 import { NotificationType } from '../../notification/types';
 import { AlertSeverity } from '../../monitor/types';
+import { CurrentUser, JwtPayload } from '../../auth';
 
 @Controller('notifications')
 export class NotificationController {
@@ -21,7 +22,7 @@ export class NotificationController {
    */
   @Get()
   async getNotifications(
-    @Query('recipientId', ParseUUIDPipe) recipientId: string,
+    @CurrentUser() user: JwtPayload,
     @Query('projectId') projectId?: string,
     @Query('notificationType') notificationType?: NotificationType,
     @Query('severity') severity?: AlertSeverity,
@@ -30,7 +31,7 @@ export class NotificationController {
     @Query('limit') limit?: string,
   ) {
     const options = {
-      recipientId,
+      recipientId: user.sub,
       projectId,
       notificationType,
       severity,
@@ -57,10 +58,10 @@ export class NotificationController {
    */
   @Get('unread-count')
   async getUnreadCount(
-    @Query('recipientId', ParseUUIDPipe) recipientId: string,
+    @CurrentUser() user: JwtPayload,
     @Query('projectId') projectId?: string,
   ) {
-    return this.notificationService.getUnreadCount(recipientId, projectId);
+    return this.notificationService.getUnreadCount(user.sub, projectId);
   }
 
   /**
@@ -82,11 +83,11 @@ export class NotificationController {
   @Post('read-all')
   @HttpCode(HttpStatus.OK)
   async markAllAsRead(
-    @Query('recipientId', ParseUUIDPipe) recipientId: string,
+    @CurrentUser() user: JwtPayload,
     @Query('projectId') projectId?: string,
   ) {
     const count = await this.notificationService.markAllAsRead(
-      recipientId,
+      user.sub,
       projectId,
     );
     return { success: true, updatedCount: count };

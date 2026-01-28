@@ -6,6 +6,7 @@ import {
   TypeOrmHealthIndicator,
   HealthCheckResult,
 } from '@nestjs/terminus';
+import { Public } from '../../auth';
 
 @ApiTags('health')
 @Controller('health')
@@ -15,6 +16,7 @@ export class HealthController {
     private db: TypeOrmHealthIndicator,
   ) {}
 
+  @Public()
   @Get()
   @HealthCheck()
   @ApiOperation({ summary: '헬스체크', description: '서버 및 데이터베이스 연결 상태를 확인합니다.' })

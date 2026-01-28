@@ -11,6 +11,7 @@ import {
   NotFoundException,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,6 +30,11 @@ import { PaginatedResponse, ErrorResponseDto } from '../dto/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
 import { Project } from '../../scheduling/entities';
+import {
+  ProjectPermissionGuard,
+  RequireProjectPermission,
+  ProjectPermission,
+} from '../../auth';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -78,6 +84,8 @@ export class ProjectController {
   }
 
   @Get(':id')
+  @UseGuards(ProjectPermissionGuard)
+  @RequireProjectPermission(ProjectPermission.VIEW)
   @ApiOperation({ summary: '프로젝트 상세 조회', description: '프로젝트 ID로 상세 정보를 조회합니다.' })
   @ApiParam({ name: 'id', description: '프로젝트 ID (UUID)' })
   @ApiResponse({ status: 200, description: '프로젝트 조회 성공', type: ProjectResponseDto })
@@ -92,6 +100,8 @@ export class ProjectController {
   }
 
   @Patch(':id')
+  @UseGuards(ProjectPermissionGuard)
+  @RequireProjectPermission(ProjectPermission.EDIT)
   @ApiOperation({ summary: '프로젝트 수정', description: '프로젝트 정보를 수정합니다. 런칭일 변경 시 스케줄이 재계산됩니다.' })
   @ApiParam({ name: 'id', description: '프로젝트 ID (UUID)' })
   @ApiResponse({ status: 200, description: '프로젝트 수정 성공', type: ProjectResponseDto })
@@ -121,6 +131,8 @@ export class ProjectController {
   }
 
   @Delete(':id')
+  @UseGuards(ProjectPermissionGuard)
+  @RequireProjectPermission(ProjectPermission.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: '프로젝트 삭제', description: '프로젝트를 삭제합니다.' })
   @ApiParam({ name: 'id', description: '프로젝트 ID (UUID)' })
