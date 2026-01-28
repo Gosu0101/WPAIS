@@ -3,6 +3,8 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { Project, Episode, Milestone } from '../scheduling/entities';
 import { Page } from '../workflow/entities';
 import { Alert, ProgressSnapshot } from '../monitor/entities';
+import { User, RefreshToken } from '../auth/entities';
+import { Notification, NotificationSetting, ProjectMember } from '../notification/entities';
 
 export const getDatabaseConfig = (
   configService: ConfigService,
@@ -10,12 +12,17 @@ export const getDatabaseConfig = (
   const isProduction = configService.get('NODE_ENV') === 'production';
   const isTest = configService.get('NODE_ENV') === 'test';
 
+  const allEntities = [
+    Project, Episode, Milestone, Page, Alert, ProgressSnapshot,
+    User, RefreshToken, Notification, NotificationSetting, ProjectMember,
+  ];
+
   // 테스트 환경에서는 SQLite 인메모리 사용
   if (isTest) {
     return {
       type: 'sqlite',
       database: ':memory:',
-      entities: [Project, Episode, Milestone, Page, Alert, ProgressSnapshot],
+      entities: allEntities,
       synchronize: true,
       dropSchema: true,
     };
@@ -29,7 +36,7 @@ export const getDatabaseConfig = (
     username: configService.get<string>('DATABASE_USER', 'postgres'),
     password: configService.get<string>('DATABASE_PASSWORD', ''),
     database: configService.get<string>('DATABASE_NAME', 'wpais_db'),
-    entities: [Project, Episode, Milestone, Page, Alert, ProgressSnapshot],
+    entities: allEntities,
     synchronize: false, // 프로덕션에서는 마이그레이션 사용
     logging: !isProduction,
     // 연결 풀링 설정
@@ -53,4 +60,9 @@ export const entities = [
   Page,
   Alert,
   ProgressSnapshot,
+  User,
+  RefreshToken,
+  Notification,
+  NotificationSetting,
+  ProjectMember,
 ];
