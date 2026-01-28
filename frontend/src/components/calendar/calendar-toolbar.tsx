@@ -29,13 +29,13 @@ export function CalendarToolbar({
   const getDateLabel = () => {
     switch (currentView) {
       case 'dayGridMonth':
-        return format(currentDate, 'yyyy년 M월', { locale: ko });
+        return format(currentDate, "yyyy'년' M'월'", { locale: ko });
       case 'timeGridWeek':
-        return format(currentDate, 'yyyy년 M월 W주', { locale: ko });
+        return format(currentDate, "yyyy'년' M'월' wo", { locale: ko });
       case 'timeGridDay':
-        return format(currentDate, 'yyyy년 M월 d일 (EEE)', { locale: ko });
+        return format(currentDate, "yyyy'년' M'월' d'일' (EEE)", { locale: ko });
       default:
-        return format(currentDate, 'yyyy년 M월', { locale: ko });
+        return format(currentDate, "yyyy'년' M'월'", { locale: ko });
     }
   };
 

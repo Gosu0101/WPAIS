@@ -6,6 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { EventClickArg, EventDropArg, DatesSetArg } from '@fullcalendar/core';
+import { startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { useCalendarEvents, useRescheduleEvent } from '@/lib/hooks/use-calendar';
 import { CalendarEvent, CalendarEventType } from '@/lib/api/client';
 import { CalendarToolbar } from './calendar-toolbar';
@@ -22,6 +23,14 @@ export interface CalendarViewProps {
   editable?: boolean;
 }
 
+// 초기 날짜 범위 계산 (현재 월 기준 전후 1개월)
+function getInitialDateRange(date: Date) {
+  return {
+    start: subMonths(startOfMonth(date), 1),
+    end: addMonths(endOfMonth(date), 1),
+  };
+}
+
 export function CalendarView({
   projectId,
   initialView = 'dayGridMonth',
@@ -31,7 +40,7 @@ export function CalendarView({
   const calendarRef = useRef<FullCalendar>(null);
   const [currentView, setCurrentView] = useState<CalendarViewType>(initialView);
   const [currentDate, setCurrentDate] = useState(initialDate);
-  const [dateRange, setDateRange] = useState({ start: new Date(), end: new Date() });
+  const [dateRange, setDateRange] = useState(() => getInitialDateRange(initialDate));
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number } | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
