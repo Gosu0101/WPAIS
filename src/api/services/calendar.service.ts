@@ -163,12 +163,15 @@ export class CalendarService {
   }
 
   private async getTasks(startDate: Date, endDate: Date, projectIds: string[]): Promise<CalendarEventResponseDto[]> {
+    // 성능 최적화: IN_PROGRESS 에피소드의 작업만 로드 (최대 50개 제한)
     const episodes = await this.episodeRepository.find({
       where: {
         projectId: In(projectIds),
         dueDate: Between(startDate, endDate),
+        status: 'IN_PROGRESS' as any,
       },
       relations: ['project'],
+      take: 10, // 최대 10개 에피소드만
     });
 
     const episodeIds = episodes.map(e => e.id);
@@ -177,6 +180,7 @@ export class CalendarService {
     const pages = await this.pageRepository.find({
       where: { episodeId: In(episodeIds) },
       relations: ['episode'],
+      take: 50, // 최대 50개 페이지만
     });
 
     const events: CalendarEventResponseDto[] = [];
@@ -186,6 +190,7 @@ export class CalendarService {
       const episode = episodeMap.get(page.episodeId);
       if (!episode) continue;
 
+      // IN_PROGRESS 또는 READY 상태의 작업만 표시
       const taskTypes: Array<{ type: 'BACKGROUND' | 'LINE_ART' | 'COLORING' | 'POST_PROCESSING'; status: TaskStatus }> = [
         { type: 'BACKGROUND', status: page.backgroundStatus },
         { type: 'LINE_ART', status: page.lineArtStatus },
@@ -194,7 +199,8 @@ export class CalendarService {
       ];
 
       for (const task of taskTypes) {
-        if (task.status === TaskStatus.LOCKED) continue;
+        // LOCKED과 DONE 상태는 제외 (활성 작업만 표시)
+        if (task.status === TaskStatus.LOCKED || task.status === TaskStatus.DONE) continue;
 
         events.push({
           id: `${page.id}-${task.type}`,

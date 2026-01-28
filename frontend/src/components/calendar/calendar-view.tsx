@@ -46,7 +46,7 @@ export function CalendarView({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [pendingDrop, setPendingDrop] = useState<{ event: CalendarEvent; newDate: Date } | null>(null);
   const [filters, setFilters] = useState({
-    eventTypes: ['episode', 'milestone', 'task'] as CalendarEventType[],
+    eventTypes: ['episode', 'milestone'] as CalendarEventType[], // task 제외 (성능 최적화)
     episodeStatuses: [] as string[],
     taskTypes: [] as string[],
     projectIds: [] as string[],
