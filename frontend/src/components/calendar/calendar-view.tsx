@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -23,24 +23,28 @@ export interface CalendarViewProps {
   editable?: boolean;
 }
 
-// 초기 날짜 범위 계산 (현재 월 기준 전후 1개월)
+// 초기 날짜 범위 계산 (현재 날짜 기준 전후 6개월 - 넓넉하게)
 function getInitialDateRange(date: Date) {
   return {
-    start: subMonths(startOfMonth(date), 1),
-    end: addMonths(endOfMonth(date), 1),
+    start: subMonths(startOfMonth(date), 6),
+    end: addMonths(endOfMonth(date), 6),
   };
 }
 
 export function CalendarView({
   projectId,
   initialView = 'dayGridMonth',
-  initialDate = new Date(),
+  initialDate,
   editable = true,
 }: CalendarViewProps) {
   const calendarRef = useRef<FullCalendar>(null);
+  
+  // initialDate를 useMemo로 안정화 (한 번만 계산)
+  const stableInitialDate = useMemo(() => initialDate || new Date(), []);
+  
   const [currentView, setCurrentView] = useState<CalendarViewType>(initialView);
-  const [currentDate, setCurrentDate] = useState(initialDate);
-  const [dateRange, setDateRange] = useState(() => getInitialDateRange(initialDate));
+  const [currentDate, setCurrentDate] = useState(stableInitialDate);
+  const [dateRange, setDateRange] = useState(() => getInitialDateRange(stableInitialDate));
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [popoverAnchor, setPopoverAnchor] = useState<{ x: number; y: number } | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -84,7 +88,10 @@ export function CalendarView({
   }, [currentView]);
 
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
-    setDateRange({ start: arg.start, end: arg.end });
+    // 현재 보이는 날짜 범위를 기준으로 전후 3개월 데이터 로드
+    const newStart = subMonths(arg.start, 3);
+    const newEnd = addMonths(arg.end, 3);
+    setDateRange({ start: newStart, end: newEnd });
     setCurrentDate(arg.view.currentStart);
   }, []);
 
@@ -183,7 +190,7 @@ export function CalendarView({
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView={currentView}
-            initialDate={initialDate}
+            initialDate={stableInitialDate}
             headerToolbar={false}
             editable={editable}
             droppable={false}
