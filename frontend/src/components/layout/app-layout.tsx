@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
 import { BottomNav } from "./bottom-nav";
@@ -22,6 +22,7 @@ const BREAKPOINTS = {
 
 export function AppLayout({ children, title, subtitle, projectId: propProjectId }: AppLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [selectedProjectId, setSelectedProjectId] = useState<string>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -83,7 +84,9 @@ export function AppLayout({ children, title, subtitle, projectId: propProjectId 
   const handleProjectSelect = useCallback((projectId: string) => {
     setSelectedProjectId(projectId);
     localStorage.setItem("selectedProjectId", projectId);
-  }, []);
+    // 프로젝트 상세 페이지로 이동
+    router.push(`/projects/${projectId}`);
+  }, [router]);
 
   const handleMenuClick = useCallback(() => {
     setSidebarOpen((prev) => !prev);
