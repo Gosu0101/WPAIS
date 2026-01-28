@@ -325,6 +325,78 @@ export const apiClient = {
     list: (projectId: string) =>
       fetchApi<Milestone[]>(`/projects/${projectId}/milestones`),
   },
+
+  calendar: {
+    getEvents: (params: {
+      startDate: string;
+      endDate: string;
+      projectIds?: string[];
+      types?: ('episode' | 'milestone' | 'task')[];
+    }) => {
+      const searchParams = new URLSearchParams();
+      searchParams.set('startDate', params.startDate);
+      searchParams.set('endDate', params.endDate);
+      if (params.projectIds?.length) {
+        params.projectIds.forEach(id => searchParams.append('projectIds', id));
+      }
+      if (params.types?.length) {
+        params.types.forEach(type => searchParams.append('types', type));
+      }
+      return fetchApi<CalendarEventsResponse>(`/calendar/events?${searchParams.toString()}`);
+    },
+    getProjectEvents: (projectId: string, params: {
+      startDate: string;
+      endDate: string;
+      types?: ('episode' | 'milestone' | 'task')[];
+    }) => {
+      const searchParams = new URLSearchParams();
+      searchParams.set('startDate', params.startDate);
+      searchParams.set('endDate', params.endDate);
+      if (params.types?.length) {
+        params.types.forEach(type => searchParams.append('types', type));
+      }
+      return fetchApi<CalendarEventsResponse>(`/projects/${projectId}/calendar/events?${searchParams.toString()}`);
+    },
+    rescheduleEvent: (eventId: string, data: { newDate: string; eventType: 'episode' | 'milestone' | 'task' }) =>
+      fetchApi<RescheduleEventResponse>(`/calendar/events/${eventId}/reschedule`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+  },
 };
+
+// Calendar Types
+export type CalendarEventType = 'episode' | 'milestone' | 'task';
+
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  allDay: boolean;
+  type: CalendarEventType;
+  projectId: string;
+  projectTitle?: string;
+  color?: string;
+  extendedProps: Record<string, unknown>;
+}
+
+export interface CalendarProject {
+  id: string;
+  title: string;
+  color: string;
+}
+
+export interface CalendarEventsResponse {
+  events: CalendarEvent[];
+  projects: CalendarProject[];
+}
+
+export interface RescheduleEventResponse {
+  success: boolean;
+  affectedEvents?: CalendarEvent[];
+  warnings?: string[];
+}
+
 
 export default apiClient;

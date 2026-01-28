@@ -9,16 +9,22 @@ interface VelocityCardProps {
   projectId: string;
 }
 
-interface VelocityData {
-  currentVelocity: number;
-  requiredVelocity: number;
-  trend: "UP" | "DOWN" | "STABLE";
-  history: { date: string; velocity: number }[];
+interface VelocityApiResponse {
+  velocity: {
+    actualVelocity: number;
+    requiredVelocity: number;
+    velocityDeficit: number;
+    isDeficient: boolean;
+  };
+  trend: {
+    data: { date: string; velocity: number }[];
+    direction: "UP" | "DOWN" | "STABLE";
+  };
 }
 
 export function VelocityCard({ projectId }: VelocityCardProps) {
-  const { data, isLoading } = useVelocity(projectId);
-  const velocityData = data as VelocityData | undefined;
+  const { data, isLoading, error } = useVelocity(projectId);
+  const velocityData = data as VelocityApiResponse | undefined;
 
   if (isLoading) {
     return (
@@ -36,21 +42,30 @@ export function VelocityCard({ projectId }: VelocityCardProps) {
     );
   }
 
-  // 기본값 설정
-  const currentVelocity = velocityData?.currentVelocity ?? 2.5;
-  const requiredVelocity = velocityData?.requiredVelocity ?? 3.0;
-  const trend = velocityData?.trend ?? "STABLE";
-  const history = velocityData?.history ?? [
-    { date: "1주차", velocity: 2.0 },
-    { date: "2주차", velocity: 2.3 },
-    { date: "3주차", velocity: 2.1 },
-    { date: "4주차", velocity: 2.5 },
-    { date: "5주차", velocity: 2.4 },
-    { date: "6주차", velocity: 2.5 },
-  ];
+  if (error || !velocityData) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Gauge className="h-4 w-4" />
+            속도 분석
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">데이터를 불러올 수 없습니다</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const velocityRatio = (currentVelocity / requiredVelocity) * 100;
-  const isOnTrack = currentVelocity >= requiredVelocity;
+  const currentVelocity = velocityData.velocity?.actualVelocity ?? 0;
+  const requiredVelocity = velocityData.velocity?.requiredVelocity ?? 1;
+  const isDeficient = velocityData.velocity?.isDeficient ?? false;
+  const trend = velocityData.trend?.direction ?? "STABLE";
+  const history = velocityData.trend?.data ?? [];
+
+  const velocityRatio = requiredVelocity > 0 ? (currentVelocity / requiredVelocity) * 100 : 0;
+  const isOnTrack = !isDeficient;
 
   const getTrendIcon = () => {
     switch (trend) {
@@ -75,7 +90,9 @@ export function VelocityCard({ projectId }: VelocityCardProps) {
   };
 
   // 차트 계산
-  const maxVelocity = Math.max(...history.map((h) => h.velocity), requiredVelocity) * 1.2;
+  const maxVelocity = history.length > 0 
+    ? Math.max(...history.map((h) => h.velocity), requiredVelocity) * 1.2
+    : requiredVelocity * 1.5;
   const chartHeight = 120;
 
   return (
@@ -147,11 +164,6 @@ export function VelocityCard({ projectId }: VelocityCardProps) {
                   )}
                   style={{ width: `${Math.min(velocityRatio, 100)}%` }}
                 />
-                {/* 목표선 */}
-                <div
-                  className="absolute top-0 h-full w-0.5 bg-primary"
-                  style={{ left: "100%" }}
-                />
               </div>
             </div>
           </div>
@@ -161,83 +173,86 @@ export function VelocityCard({ projectId }: VelocityCardProps) {
             <h4 className="mb-2 text-xs font-medium text-muted-foreground">
               속도 추이
             </h4>
-            <div className="relative" style={{ height: chartHeight }}>
-              {/* 필요 속도 기준선 */}
-              <div
-                className="absolute left-0 right-0 border-t border-dashed border-primary/50"
-                style={{
-                  bottom: `${(requiredVelocity / maxVelocity) * chartHeight}px`,
-                }}
-              >
-                <span className="absolute -top-3 right-0 text-xs text-primary">
-                  필요: {requiredVelocity}
-                </span>
-              </div>
+            {history.length > 0 ? (
+              <div className="relative" style={{ height: chartHeight }}>
+                {/* 필요 속도 기준선 */}
+                <div
+                  className="absolute left-0 right-0 border-t border-dashed border-primary/50"
+                  style={{
+                    bottom: `${(requiredVelocity / maxVelocity) * chartHeight}px`,
+                  }}
+                >
+                  <span className="absolute -top-3 right-0 text-xs text-primary">
+                    필요: {requiredVelocity.toFixed(1)}
+                  </span>
+                </div>
 
-              {/* 라인 차트 */}
-              <svg className="h-full w-full" preserveAspectRatio="none">
-                {/* 영역 채우기 */}
-                <defs>
-                  <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d={`
-                    M 0 ${chartHeight}
-                    ${history
+                {/* 라인 차트 */}
+                <svg className="h-full w-full" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="velocityGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d={`
+                      M 0 ${chartHeight}
+                      ${history
+                        .map((h, i) => {
+                          const x = (i / (history.length - 1)) * 100;
+                          const y = chartHeight - (h.velocity / maxVelocity) * chartHeight;
+                          return `L ${x}% ${y}`;
+                        })
+                        .join(" ")}
+                      L 100% ${chartHeight}
+                      Z
+                    `}
+                    fill="url(#velocityGradient)"
+                  />
+                  <path
+                    d={history
                       .map((h, i) => {
                         const x = (i / (history.length - 1)) * 100;
                         const y = chartHeight - (h.velocity / maxVelocity) * chartHeight;
-                        return `L ${x}% ${y}`;
+                        return `${i === 0 ? "M" : "L"} ${x}% ${y}`;
                       })
                       .join(" ")}
-                    L 100% ${chartHeight}
-                    Z
-                  `}
-                  fill="url(#velocityGradient)"
-                />
-                {/* 라인 */}
-                <path
-                  d={history
-                    .map((h, i) => {
-                      const x = (i / (history.length - 1)) * 100;
-                      const y = chartHeight - (h.velocity / maxVelocity) * chartHeight;
-                      return `${i === 0 ? "M" : "L"} ${x}% ${y}`;
-                    })
-                    .join(" ")}
-                  fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                {/* 데이터 포인트 */}
-                {history.map((h, i) => {
-                  const x = (i / (history.length - 1)) * 100;
-                  const y = chartHeight - (h.velocity / maxVelocity) * chartHeight;
-                  return (
-                    <circle
-                      key={i}
-                      cx={`${x}%`}
-                      cy={y}
-                      r="4"
-                      fill="hsl(var(--background))"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth="2"
-                    />
-                  );
-                })}
-              </svg>
+                    fill="none"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {history.map((h, i) => {
+                    const x = (i / (history.length - 1)) * 100;
+                    const y = chartHeight - (h.velocity / maxVelocity) * chartHeight;
+                    return (
+                      <circle
+                        key={i}
+                        cx={`${x}%`}
+                        cy={y}
+                        r="4"
+                        fill="hsl(var(--background))"
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="2"
+                      />
+                    );
+                  })}
+                </svg>
 
-              {/* X축 레이블 */}
-              <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                {history.map((h, i) => (
-                  <span key={i}>{h.date}</span>
-                ))}
+                {/* X축 레이블 */}
+                <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                  {history.map((h, i) => (
+                    <span key={i}>{h.date}</span>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex h-32 items-center justify-center text-sm text-muted-foreground">
+                속도 추이 데이터가 없습니다
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

@@ -15,6 +15,8 @@ import {
   HealthController,
   AlertController,
 } from './controllers';
+import { CalendarController, ProjectCalendarController } from './controllers/calendar.controller';
+import { CalendarService } from './services/calendar.service';
 
 @Module({
   imports: [
@@ -32,12 +34,15 @@ import {
     MonitorController,
     HealthController,
     AlertController,
+    CalendarController,
+    ProjectCalendarController,
   ],
   providers: [
     {
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
     },
+    CalendarService,
   ],
 })
 export class ApiModule {}

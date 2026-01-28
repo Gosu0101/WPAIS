@@ -11,15 +11,8 @@ interface RiskAnalysisCardProps {
   projectId: string;
 }
 
-// 위험 에피소드 타입
-interface RiskEpisode {
-  episodeNumber: number;
-  riskLevel: RiskLevel;
-  reason: string;
-}
-
 export function RiskAnalysisCard({ projectId }: RiskAnalysisCardProps) {
-  const { data: riskData, isLoading } = useRiskAnalysis(projectId);
+  const { data: riskData, isLoading, error } = useRiskAnalysis(projectId);
 
   if (isLoading) {
     return (
@@ -37,14 +30,25 @@ export function RiskAnalysisCard({ projectId }: RiskAnalysisCardProps) {
     );
   }
 
-  const riskLevel = riskData?.overallRiskLevel ?? "LOW";
-  const riskScore = riskData?.riskScore ?? 0;
+  if (error || !riskData) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <AlertTriangle className="h-4 w-4" />
+            리스크 분석
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">데이터를 불러올 수 없습니다</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  // 임시 위험 에피소드 데이터
-  const riskEpisodes: RiskEpisode[] = [
-    { episodeNumber: 5, riskLevel: "HIGH", reason: "마감 임박" },
-    { episodeNumber: 6, riskLevel: "MEDIUM", reason: "진행 지연" },
-  ];
+  const riskLevel = riskData.overallRiskLevel ?? "LOW";
+  const riskScore = riskData.riskScore ?? 0;
+  const riskEpisodes = riskData.atRiskEpisodes ?? [];
 
   const getRiskConfig = (level: RiskLevel) => {
     switch (level) {
@@ -151,7 +155,7 @@ export function RiskAnalysisCard({ projectId }: RiskAnalysisCardProps) {
               })}
             </ul>
           ) : (
-            <p className="text-center text-xs text-muted-foreground">
+            <p className="text-center text-xs text-muted-foreground py-2">
               현재 위험 에피소드가 없습니다
             </p>
           )}
