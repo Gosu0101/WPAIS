@@ -68,7 +68,7 @@ export interface Alert {
 }
 
 export type RiskLevel = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-export type HealthStatus = "HEALTHY" | "WARNING" | "CRITICAL";
+export type HealthStatus = "HEALTHY" | "ATTENTION" | "WARNING" | "CRITICAL";
 
 export interface BufferStatus {
   sealedEpisodes: number;
@@ -81,17 +81,72 @@ export interface BufferStatus {
   isOnTrack: boolean;
 }
 
+export interface EpisodeProgress {
+  episodeId: string;
+  episodeNumber: number;
+  totalTasks: number;
+  completedTasks: number;
+  progressPercentage: number;
+}
+
+export type TaskType = "BACKGROUND" | "LINE_ART" | "COLORING" | "POST_PROCESSING";
+
+export interface StageProgress {
+  stage: TaskType;
+  totalTasks: number;
+  completedTasks: number;
+  progressPercentage: number;
+}
+
 export interface ProjectProgress {
   projectId: string;
   totalTasks: number;
   completedTasks: number;
   progressPercentage: number;
+  episodeProgress: EpisodeProgress[];
+  stageProgress: StageProgress[];
+}
+
+export interface RiskEpisode {
+  episodeNumber: number;
+  riskLevel: RiskLevel;
+  reason: string;
 }
 
 export interface ProjectRisk {
   projectId: string;
   overallRiskLevel: RiskLevel;
   riskScore: number;
+  atRiskEpisodes?: RiskEpisode[];
+}
+
+export interface VelocityData {
+  actualVelocity: number;
+  requiredVelocity: number;
+  velocityDeficit: number;
+  isDeficient: boolean;
+}
+
+export interface SealCountdown {
+  daysRemaining: number;
+  sealDate: string;
+  predictedCompletionDate: string;
+  achievementProbability: number;
+  isOnTrack: boolean;
+}
+
+export interface HealthFactor {
+  name: string;
+  score: number;
+  status: HealthStatus;
+}
+
+export interface HealthData {
+  projectId: string;
+  healthScore: number;
+  status: HealthStatus;
+  factors: HealthFactor[];
+  recommendations: string[];
 }
 
 export interface DashboardData {
@@ -99,6 +154,9 @@ export interface DashboardData {
   progress: ProjectProgress;
   bufferStatus: BufferStatus;
   risk: ProjectRisk;
+  velocity: VelocityData;
+  sealCountdown: SealCountdown;
+  health: HealthData;
 }
 
 export interface AlertsResponse {

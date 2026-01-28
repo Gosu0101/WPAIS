@@ -1,22 +1,17 @@
 "use client";
 
-import { Activity, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+import { Activity, CheckCircle2, AlertCircle, XCircle, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useHealth } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
+import type { HealthData, HealthStatus } from "@/lib/api/client";
 
 interface HealthScoreCardProps {
   projectId: string;
 }
 
-interface HealthData {
-  score: number;
-  status: "HEALTHY" | "WARNING" | "CRITICAL";
-  recommendations: string[];
-}
-
 export function HealthScoreCard({ projectId }: HealthScoreCardProps) {
-  const { data, isLoading } = useHealth(projectId);
+  const { data, isLoading, error } = useHealth(projectId);
   const healthData = data as HealthData | undefined;
 
   if (isLoading) {
@@ -35,12 +30,28 @@ export function HealthScoreCard({ projectId }: HealthScoreCardProps) {
     );
   }
 
-  // 기본값 설정
-  const score = healthData?.score ?? 75;
+  if (error) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Activity className="h-4 w-4" />
+            건강 점수
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">데이터를 불러올 수 없습니다</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // 실제 API 데이터 사용 (healthScore 필드명 매핑)
+  const score = healthData?.healthScore ?? 0;
   const status = healthData?.status ?? "HEALTHY";
   const recommendations = healthData?.recommendations ?? [];
 
-  const getStatusConfig = (status: string) => {
+  const getStatusConfig = (status: HealthStatus) => {
     switch (status) {
       case "CRITICAL":
         return {
@@ -52,8 +63,15 @@ export function HealthScoreCard({ projectId }: HealthScoreCardProps) {
       case "WARNING":
         return {
           icon: AlertCircle,
-          color: "text-warning",
-          bgColor: "bg-warning/10",
+          color: "text-orange-500",
+          bgColor: "bg-orange-500/10",
+          label: "경고",
+        };
+      case "ATTENTION":
+        return {
+          icon: AlertTriangle,
+          color: "text-yellow-500",
+          bgColor: "bg-yellow-500/10",
           label: "주의",
         };
       default:
