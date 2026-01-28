@@ -56,12 +56,22 @@ export function CalendarView({
     projectIds: [] as string[],
   });
 
-  const { data, isLoading, isFetching } = useCalendarEvents({
+  const { data, isLoading, isFetching, error } = useCalendarEvents({
     startDate: dateRange.start,
     endDate: dateRange.end,
     projectId,
     projectIds: filters.projectIds.length ? filters.projectIds : undefined,
     types: filters.eventTypes,
+  });
+
+  // 디버깅용 로그
+  console.log('Calendar data:', { 
+    dateRange, 
+    eventsCount: data?.events?.length, 
+    projectsCount: data?.projects?.length,
+    isLoading,
+    isFetching,
+    error: error?.message 
   });
 
   const reschedule = useRescheduleEvent();
@@ -163,6 +173,16 @@ export function CalendarView({
         {(isLoading || isFetching) && (
           <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
+        )}
+        
+        {/* 에러 표시 */}
+        {error && (
+          <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10">
+            <div className="text-center p-4">
+              <p className="text-destructive font-medium">캘린더 데이터를 불러오는데 실패했습니다</p>
+              <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
+            </div>
           </div>
         )}
         
