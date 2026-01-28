@@ -20,8 +20,12 @@ export function useCalendarEvents({
   types,
   enabled = true,
 }: UseCalendarEventsParams) {
+  // 날짜를 년-월 형식으로 단순화하여 queryKey 안정화
+  const startKey = `${startDate.getFullYear()}-${startDate.getMonth()}`;
+  const endKey = `${endDate.getFullYear()}-${endDate.getMonth()}`;
+  
   return useQuery<CalendarEventsResponse>({
-    queryKey: ['calendar-events', startDate.toISOString(), endDate.toISOString(), projectId, projectIds, types],
+    queryKey: ['calendar-events', startKey, endKey, projectId, projectIds?.join(','), types?.join(',')],
     queryFn: () => {
       if (projectId) {
         return apiClient.calendar.getProjectEvents(projectId, {
@@ -37,7 +41,8 @@ export function useCalendarEvents({
         types,
       });
     },
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 5 * 60 * 1000, // 5분 캐시
+    gcTime: 10 * 60 * 1000, // 10분 가비지 컨렉션
     enabled,
   });
 }
