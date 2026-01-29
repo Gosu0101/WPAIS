@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api/client';
+import { useAuth } from '../contexts/auth-context';
 
 export interface Notification {
   id: string;
@@ -39,6 +40,8 @@ export function useNotifications(
     limit?: number;
   }
 ) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
   const params = new URLSearchParams({ recipientId });
   if (options?.projectId) params.append('projectId', options.projectId);
   if (options?.notificationType) params.append('notificationType', options.notificationType);
@@ -49,19 +52,21 @@ export function useNotifications(
   return useQuery<NotificationsResponse>({
     queryKey: ['notifications', recipientId, options],
     queryFn: () => apiClient.get(`/notifications?${params.toString()}`),
-    enabled: !!recipientId,
+    enabled: !!recipientId && isAuthenticated && !authLoading,
   });
 }
 
 
 export function useUnreadCount(recipientId: string, projectId?: string) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
   const params = new URLSearchParams({ recipientId });
   if (projectId) params.append('projectId', projectId);
 
   return useQuery<UnreadCountResponse>({
     queryKey: ['notifications', 'unread-count', recipientId, projectId],
     queryFn: () => apiClient.get(`/notifications/unread-count?${params.toString()}`),
-    enabled: !!recipientId,
+    enabled: !!recipientId && isAuthenticated && !authLoading,
     refetchInterval: 30000, // 30초마다 갱신
   });
 }

@@ -29,10 +29,12 @@ async function bootstrap() {
   // Global Exception Filter
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  // CORS - 프론트엔드에서 쿠키 전송 허용
+  // CORS - credentials 모드 지원
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Swagger Configuration

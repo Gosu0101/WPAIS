@@ -2,13 +2,16 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, Page, EpisodeDetail, TaskStatus } from "../api/client";
+import { useAuth } from "../contexts/auth-context";
 
 // 에피소드 상세 조회 (자동 갱신 포함)
 export function useEpisodeWorkflow(id: string) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
   return useQuery<EpisodeDetail>({
     queryKey: ["episode", id],
     queryFn: () => apiClient.episodes.get(id),
-    enabled: !!id,
+    enabled: !!id && isAuthenticated && !authLoading,
     // 30초마다 자동 갱신
     refetchInterval: 30 * 1000,
     // 윈도우 포커스 시 갱신
@@ -19,10 +22,12 @@ export function useEpisodeWorkflow(id: string) {
 }
 
 export function usePage(id: string) {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  
   return useQuery({
     queryKey: ["page", id],
     queryFn: () => apiClient.pages.get(id),
-    enabled: !!id,
+    enabled: !!id && isAuthenticated && !authLoading,
   });
 }
 
