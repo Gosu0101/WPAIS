@@ -32,7 +32,7 @@
 - [x] Implement login rate limiting.
 - [x] Implement general API rate limiting.
 - [x] Align 429 handling and docs with the actual behavior.
-- [ ] Decide whether JWT signing should stay symmetric or move to the RS256 design in the legacy spec.
+- [x] Decide whether JWT signing should stay symmetric or move to the RS256 design in the legacy spec.
 
 ## 7. Dev Environment
 - [x] Remove the Next.js workspace root warning in the frontend config.

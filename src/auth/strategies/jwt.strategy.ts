@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from '../services/auth.service';
 import { JwtPayload } from '../types';
+import { getJwtAlgorithm, getJwtKeyConfig } from '../utils/jwt-config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -11,11 +12,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly configService: ConfigService,
     private readonly authService: AuthService,
   ) {
-    const secret = configService.get<string>('JWT_SECRET') || 'default-secret';
+    const algorithm = getJwtAlgorithm(configService);
+    const keyConfig = getJwtKeyConfig(configService);
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: secret,
+      secretOrKey: keyConfig.verifyKey,
+      algorithms: [algorithm],
     });
   }
 

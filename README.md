@@ -200,6 +200,7 @@ DATABASE_POOL_SIZE=10
 DATABASE_CONNECT_TIMEOUT=10000
 
 JWT_SECRET=replace-with-a-long-random-secret
+JWT_ALGORITHM=HS256
 JWT_EXPIRES_IN=15m
 REFRESH_TOKEN_EXPIRES_IN=7d
 LOGIN_RATE_LIMIT_WINDOW_MS=900000
@@ -212,9 +213,17 @@ API_RATE_LIMIT_MAX=300
 
 - `FRONTEND_URL`: CORS 허용 출처입니다. 로컬 기본 프런트 주소는 `http://localhost:3000`입니다.
 - `JWT_SECRET`: 인증 기능에 필요합니다. 개발 환경에서도 반드시 지정하는 것을 권장합니다.
+- `JWT_ALGORITHM`: 기본값은 `HS256`입니다. 현재 로컬 개발과 기본 배포는 이 값을 사용합니다.
+- `RS256`을 쓰려면 `JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` 또는 `JWT_PRIVATE_KEY_PATH`/`JWT_PUBLIC_KEY_PATH`를 함께 설정해야 합니다.
 - `PORT`: 백엔드 기본 포트입니다. 로컬 기본값은 `3001`입니다.
 - 로그인 rate limit 기본값은 15분당 5회입니다.
 - 일반 API rate limit 기본값은 1분당 300회입니다.
+
+JWT 서명 정책:
+
+- 현재 기본 운영 정책은 `HS256`입니다.
+- 기존 레거시 스펙의 `RS256` 요구사항은 선택 가능한 배포 설정으로 지원합니다.
+- 즉, 로컬 개발과 기본 설치는 `JWT_SECRET`만으로 동작하고, 운영 환경에서는 비대칭 키 쌍으로 전환할 수 있습니다.
 
 ### 6.2 프런트엔드 `frontend/.env.local`
 

@@ -35,7 +35,15 @@ DATABASE_PORT=5432
 DATABASE_USER=postgres
 DATABASE_PASSWORD=your_password
 DATABASE_NAME=wpais_db
+JWT_SECRET=replace-with-a-long-random-secret
+JWT_ALGORITHM=HS256
 ```
+
+JWT 정책:
+
+- 기본값은 `HS256`이며 `JWT_SECRET`만 있으면 실행됩니다.
+- `RS256`으로 운영하려면 `JWT_ALGORITHM=RS256`과 함께 공개키/개인키를 설정합니다.
+- 키는 직접 PEM 문자열로 넣거나 `JWT_PRIVATE_KEY_PATH`, `JWT_PUBLIC_KEY_PATH`로 파일 경로를 줄 수 있습니다.
 
 ---
 

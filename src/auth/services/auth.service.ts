@@ -19,6 +19,7 @@ import {
   RegisterRequest,
   LoginRequest,
 } from '../types';
+import { buildJwtSignOptions, buildJwtVerifyOptions } from '../utils/jwt-config';
 
 @Injectable()
 export class AuthService {
@@ -222,9 +223,10 @@ export class AuthService {
     };
 
     const expiresIn = this.configService.get<string>('JWT_EXPIRES_IN', '15m');
-    return this.jwtService.sign(payload, {
-      expiresIn: expiresIn as any,
-    });
+    return this.jwtService.sign(
+      payload,
+      buildJwtSignOptions(this.configService, expiresIn),
+    );
   }
 
   /**
@@ -250,9 +252,10 @@ export class AuthService {
       tokenId: savedToken.id,
     };
 
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: expiresIn as any,
-    });
+    const refreshToken = this.jwtService.sign(
+      payload,
+      buildJwtSignOptions(this.configService, expiresIn),
+    );
 
     // 토큰 해시 저장
     const tokenHash = await this.hashTokenForStorage(refreshToken);
@@ -275,9 +278,10 @@ export class AuthService {
   }> {
     let payload: RefreshTokenPayload;
     try {
-      payload = this.jwtService.verify<RefreshTokenPayload>(refreshTokenValue, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-      });
+      payload = this.jwtService.verify<RefreshTokenPayload>(
+        refreshTokenValue,
+        buildJwtVerifyOptions(this.configService),
+      );
     } catch {
       throw new UnauthorizedException('유효하지 않은 Refresh Token입니다.');
     }
