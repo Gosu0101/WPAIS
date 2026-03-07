@@ -1,5 +1,11 @@
 # Remaining Dirty Worktree Snapshot
 
+상태 업데이트:
+
+- 최신 확인 기준 `git status --short --branch` 결과 작업 트리는 clean 상태임
+- 즉 초기 진단 시 남아 있던 EOL 중심 dirty 상태는 현재 시점에서 정리 완료로 본다
+- 이후 작업은 dirty 정리가 아니라 머지 후 새 브랜치에서 이어가는 것이 맞다
+
 기준 시점:
 
 - 브랜치: `checkpoint/2026-03-07-working-tree`
@@ -17,11 +23,11 @@
 - 즉 현재 remaining dirty는 주로 줄바꿈(EOL) 차이로 보아야 함
 - 저장소 루트에 `.gitattributes`와 `.editorconfig`를 추가해 앞으로의 EOL 정책은 LF 기준으로 고정함
 
-## 현재 남은 변경 범위
+## 당시 남아 있던 변경 범위
 
-- 남은 modified 파일은 이번 커밋 범위 밖의 기존 작업 트리이며, 현재 기준으로는 대부분 EOL-only 차이입니다.
-- `git diff --stat` 기준 약 `285 files changed`
-- 대략적인 디렉터리 분포:
+- 초기 진단 시 남은 modified 파일은 이번 커밋 범위 밖의 기존 작업 트리였고, 대부분 EOL-only 차이로 분류했다.
+- 당시 `git diff --stat` 기준 약 `285 files changed`
+- 당시 대략적인 디렉터리 분포:
   - `frontend/src`: 71
   - `src/api`: 33
   - `src/auth`: 26
@@ -92,8 +98,8 @@
 5. `scripts/`, `query`, 루트 설정은 의도 확인 후 처리
 - 현재는 출처/용도가 불명확한 파일이 있어 바로 커밋하지 않는 편이 맞음
 
-## 바로 다음 액션 추천
+## 다음 액션 추천
 
-- 현재 상태에선 추가 기능 커밋보다 EOL 정리 여부를 먼저 결정하는 편이 맞음
-- 줄바꿈 변경을 유지하지 않을 경우, 사용자 승인 후 별도 정규화/정리 작업 필요
-- 줄바꿈 변경을 유지할 경우, 이 5개 커밋만 기준으로 push/PR 준비 진행 가능
+- PR #1 리뷰 및 머지 진행
+- 머지 후 새 브랜치를 `master` 기준으로 다시 생성
+- 이후 기능 작업은 `frontend` 또는 `backend domain` 단위로 별도 브랜치에서 시작
