@@ -11,6 +11,7 @@ import {
   useNotificationSettings,
   useUpdateNotificationSettings,
 } from '@/lib/hooks/use-notification-settings';
+import { useAuth } from '@/lib/contexts/auth-context';
 
 const NOTIFICATION_TYPES = [
   { key: 'TASK_DEADLINE_APPROACHING', label: '공정 마감 임박', description: '공정 마감일이 다가올 때 알림' },
@@ -22,16 +23,14 @@ const NOTIFICATION_TYPES = [
   { key: 'EPISODE_COMPLETED', label: '에피소드 완료', description: '에피소드가 완료되었을 때 알림' },
 ];
 
-// 임시 사용자 ID (인증 시스템 구현 전)
-const TEMP_USER_ID = '00000000-0000-0000-0000-000000000001';
-
 export default function NotificationSettingsPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id: projectId } = use(params);
-  const { data, isLoading } = useNotificationSettings(projectId, TEMP_USER_ID);
+  const { user } = useAuth();
+  const { data, isLoading } = useNotificationSettings(projectId);
   const updateSettings = useUpdateNotificationSettings();
 
   const [enabledTypes, setEnabledTypes] = useState<string[]>([]);
@@ -58,7 +57,6 @@ export default function NotificationSettingsPage({
   const handleSave = () => {
     updateSettings.mutate({
       projectId,
-      userId: TEMP_USER_ID,
       updates: { enabledTypes, thresholds },
     });
   };
@@ -69,6 +67,10 @@ export default function NotificationSettingsPage({
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (

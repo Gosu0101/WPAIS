@@ -5,7 +5,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { SchedulingModule, Project, Episode, Milestone } from '../scheduling';
 import { WorkflowModule, Page } from '../workflow';
 import { MonitorModule } from '../monitor';
-import { NotificationModule } from '../notification';
+import { NotificationModule, ProjectMember } from '../notification';
 import { AuthModule, JwtAuthGuard } from '../auth';
 import { HttpExceptionFilter } from './filters';
 import {
@@ -25,7 +25,7 @@ import { CalendarService } from './services/calendar.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Project, Episode, Milestone, Page]),
+    TypeOrmModule.forFeature([Project, Episode, Milestone, Page, ProjectMember]),
     TerminusModule,
     SchedulingModule,
     WorkflowModule,

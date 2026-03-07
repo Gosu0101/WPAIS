@@ -254,4 +254,42 @@ describe('CalendarService', () => {
       expect(result.warnings).toContain('Cannot reschedule sealed episode');
     });
   });
+
+  describe('getEventProjectId', () => {
+    it('should resolve project id for episode events', async () => {
+      episodeRepository.findOne.mockResolvedValue({
+        projectId: 'project-1',
+      } as Episode);
+
+      await expect(
+        service.getEventProjectId('episode-1', 'episode'),
+      ).resolves.toBe('project-1');
+    });
+
+    it('should resolve project id for milestone events', async () => {
+      milestoneRepository.findOne.mockResolvedValue({
+        projectId: 'project-2',
+      } as Milestone);
+
+      await expect(
+        service.getEventProjectId('milestone-1', 'milestone'),
+      ).resolves.toBe('project-2');
+    });
+
+    it('should resolve project id for task events with UUID page ids', async () => {
+      pageRepository.findOne.mockResolvedValue({
+        episodeId: 'episode-uuid',
+      } as Page);
+      episodeRepository.findOne.mockResolvedValue({
+        projectId: 'project-3',
+      } as Episode);
+
+      const eventId =
+        '550e8400-e29b-41d4-a716-446655440000-POST_PROCESSING';
+
+      await expect(service.getEventProjectId(eventId, 'task')).resolves.toBe(
+        'project-3',
+      );
+    });
+  });
 });

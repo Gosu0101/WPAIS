@@ -5,3 +5,4 @@ export * from './page';
 export * from './milestone';
 export * from './monitor';
 export * from './calendar';
+export * from './notification';

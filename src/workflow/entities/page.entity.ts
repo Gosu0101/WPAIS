@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { TaskStatus } from '../types';
 import { Episode } from '../../scheduling/entities/episode.entity';
+import { DATETIME_COLUMN_TYPE } from '../../config/database-column-types';
 
 /**
  * Page 엔티티
@@ -66,16 +67,16 @@ export class Page {
   postProcessingStatus: TaskStatus;
 
   // 공정별 마감일 (에피소드 시작일 기준으로 계산)
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: DATETIME_COLUMN_TYPE, nullable: true })
   backgroundDueDate: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: DATETIME_COLUMN_TYPE, nullable: true })
   lineArtDueDate: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: DATETIME_COLUMN_TYPE, nullable: true })
   coloringDueDate: Date | null;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: DATETIME_COLUMN_TYPE, nullable: true })
   postProcessingDueDate: Date | null;
 
   @CreateDateColumn()

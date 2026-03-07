@@ -17,40 +17,39 @@ export interface NotificationSetting {
   updatedAt: string;
 }
 
-export function useNotificationSettings(projectId: string, userId: string) {
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+export function useNotificationSettings(projectId: string) {
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   
   return useQuery<{ data: NotificationSetting }>({
-    queryKey: ['notification-settings', projectId, userId],
+    queryKey: ['notification-settings', projectId, user?.id],
     queryFn: () =>
-      apiClient.get(`/projects/${projectId}/notification-settings?userId=${userId}`),
-    enabled: !!projectId && !!userId && isAuthenticated && !authLoading,
+      apiClient.get(`/projects/${projectId}/notification-settings`),
+    enabled: !!projectId && !!user?.id && isAuthenticated && !authLoading,
   });
 }
 
 export function useUpdateNotificationSettings() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: ({
       projectId,
-      userId,
       updates,
     }: {
       projectId: string;
-      userId: string;
       updates: {
         enabledTypes?: string[];
         thresholds?: Partial<NotificationSetting['thresholds']>;
       };
     }) =>
       apiClient.patch(
-        `/projects/${projectId}/notification-settings?userId=${userId}`,
+        `/projects/${projectId}/notification-settings`,
         updates
       ),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ['notification-settings', variables.projectId, variables.userId],
+        queryKey: ['notification-settings', variables.projectId, user?.id],
       });
     },
   });

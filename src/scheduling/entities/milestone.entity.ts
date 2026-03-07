@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Project } from './project.entity';
+import { DATETIME_COLUMN_TYPE } from '../../config/database-column-types';
 
 export enum MilestoneType {
   PLANNING_COMPLETE = 'PLANNING_COMPLETE',
@@ -37,7 +38,7 @@ export class Milestone {
   @Column({ default: false })
   isCompleted: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: DATETIME_COLUMN_TYPE, nullable: true })
   completedAt: Date | null;
 
   @CreateDateColumn()

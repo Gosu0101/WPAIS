@@ -58,17 +58,17 @@ npm run migration:run
 npm run start:dev
 ```
 
-서버가 `http://localhost:3000`에서 실행됩니다.
+현재 기본 설정 기준으로 서버는 `http://localhost:3001`에서 실행됩니다.
 
 ### 2.4 API 문서 확인
 브라우저에서 Swagger 문서 확인:
 ```
-http://localhost:3000/api/docs
+http://localhost:3001/api/docs
 ```
 
 ### 2.5 헬스체크
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:3001/api/health
 ```
 
 ---
@@ -84,7 +84,7 @@ npm install
 ### 3.2 환경 변수 확인
 `frontend/.env.local` 파일:
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
 
 ### 3.3 개발 서버 실행
@@ -92,8 +92,12 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api
 npm run dev
 ```
 
-프론트엔드가 `http://localhost:3001`에서 실행됩니다.
-(백엔드가 3000 포트를 사용하므로 Next.js는 자동으로 3001 사용)
+현재 로컬 기본 조합은 다음과 같습니다.
+
+- 프런트엔드: `http://localhost:3000`
+- 백엔드 API: `http://localhost:3001/api`
+
+프런트 보호 라우트는 서버 미들웨어에서 `GET /api/auth/session`으로 세션을 먼저 확인합니다.
 
 ### 3.4 프로덕션 빌드
 ```bash
@@ -121,6 +125,9 @@ npm test -- workflow-engine.service.spec
 
 # 통합 테스트
 npm test -- integration
+
+# 인증/권한 경계 E2E
+npm test -- auth-permissions.e2e-spec.ts
 ```
 
 ### 4.3 테스트 커버리지
@@ -132,45 +139,78 @@ npm run test:cov
 
 ## 🔧 5. API 수동 테스트
 
-### 5.1 프로젝트 생성
+### 5.1 회원가입
 ```bash
-curl -X POST http://localhost:3000/api/projects \
+curl -X POST http://localhost:3001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "tester@example.com",
+    "password": "Password1",
+    "name": "Tester"
+  }'
+```
+
+### 5.2 로그인
+```bash
+curl -i -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "tester@example.com",
+    "password": "Password1"
+  }'
+```
+
+주의:
+
+- 로그인 응답에서는 access token을 받고, `refreshToken`은 HttpOnly 쿠키로 내려옵니다.
+- 브라우저 기반 화면 보호는 이 refresh cookie를 사용해 `/api/auth/session`을 확인합니다.
+
+### 5.3 프로젝트 생성
+```bash
+curl -X POST http://localhost:3001/api/projects \
+  -H "Authorization: Bearer {access-token}" \
   -H "Content-Type: application/json" \
   -d '{
     "title": "테스트 웹툰",
     "launchDate": "2026-06-01",
-    "totalEpisodes": 50
+    "episodeCount": 10
   }'
 ```
 
-### 5.2 프로젝트 목록 조회
+### 5.4 프로젝트 목록 조회
 ```bash
-curl http://localhost:3000/api/projects
+curl -H "Authorization: Bearer {access-token}" \
+  http://localhost:3001/api/projects
 ```
 
-### 5.3 프로젝트 상세 조회
+### 5.5 프로젝트 상세 조회
 ```bash
-curl http://localhost:3000/api/projects/{project-id}
+curl -H "Authorization: Bearer {access-token}" \
+  http://localhost:3001/api/projects/{project-id}
 ```
 
-### 5.4 에피소드 목록 조회
+### 5.6 에피소드 목록 조회
 ```bash
-curl http://localhost:3000/api/projects/{project-id}/episodes
+curl -H "Authorization: Bearer {access-token}" \
+  http://localhost:3001/api/projects/{project-id}/episodes
 ```
 
-### 5.5 대시보드 데이터 조회
+### 5.7 대시보드 데이터 조회
 ```bash
-curl http://localhost:3000/api/projects/{project-id}/dashboard
+curl -H "Authorization: Bearer {access-token}" \
+  http://localhost:3001/api/projects/{project-id}/dashboard
 ```
 
-### 5.6 작업 시작
+### 5.8 작업 시작
 ```bash
-curl -X POST http://localhost:3000/api/pages/{page-id}/tasks/background/start
+curl -X POST http://localhost:3001/api/pages/{page-id}/tasks/BACKGROUND/start \
+  -H "Authorization: Bearer {access-token}"
 ```
 
-### 5.7 작업 완료
+### 5.9 작업 완료
 ```bash
-curl -X POST http://localhost:3000/api/pages/{page-id}/tasks/background/complete
+curl -X POST http://localhost:3001/api/pages/{page-id}/tasks/BACKGROUND/complete \
+  -H "Authorization: Bearer {access-token}"
 ```
 
 ---
@@ -181,14 +221,14 @@ curl -X POST http://localhost:3000/api/pages/{page-id}/tasks/background/complete
 
 | 페이지 | URL | 설명 |
 |--------|-----|------|
-| 홈 | http://localhost:3001 | 프로젝트 목록 |
-| 프로젝트 목록 | http://localhost:3001/projects | 전체 프로젝트 |
-| 프로젝트 생성 | http://localhost:3001/projects/new | 새 프로젝트 |
-| 프로젝트 대시보드 | http://localhost:3001/projects/{id} | 상세 대시보드 |
-| 에피소드 목록 | http://localhost:3001/projects/{id}/episodes | 에피소드 관리 |
-| 에피소드 상세 | http://localhost:3001/episodes/{id} | 워크플로우 보드 |
-| 마일스톤 | http://localhost:3001/projects/{id}/milestones | 타임라인 |
-| 알림 | http://localhost:3001/projects/{id}/alerts | 알림 히스토리 |
+| 홈 | http://localhost:3000 | 프로젝트 목록 |
+| 프로젝트 목록 | http://localhost:3000/projects | 전체 프로젝트 |
+| 프로젝트 생성 | http://localhost:3000/projects/new | 새 프로젝트 |
+| 프로젝트 대시보드 | http://localhost:3000/projects/{id} | 상세 대시보드 |
+| 에피소드 목록 | http://localhost:3000/projects/{id}/episodes | 에피소드 관리 |
+| 에피소드 상세 | http://localhost:3000/episodes/{id} | 워크플로우 보드 |
+| 마일스톤 | http://localhost:3000/projects/{id}/milestones | 타임라인 |
+| 알림 | http://localhost:3000/projects/{id}/alerts | 알림 히스토리 |
 
 ### 6.2 테스트 시나리오
 
@@ -228,8 +268,8 @@ sudo systemctl start postgresql
 
 ### 포트 충돌
 ```bash
-# 3000 포트 사용 중인 프로세스 확인 (Windows)
-netstat -ano | findstr :3000
+# 3001 포트 사용 중인 프로세스 확인 (Windows)
+netstat -ano | findstr :3001
 
 # 프로세스 종료
 taskkill /PID {PID} /F
@@ -244,13 +284,28 @@ npm run migration:show
 npm run migration:revert
 ```
 
+### WSL에서 테스트가 깨질 때
+증상:
+
+- `sqlite3 ... invalid ELF header`
+- Jest E2E에서 SQLite 초기화 실패
+
+해결:
+
+```bash
+npm rebuild sqlite3
+```
+
+WSL에서 Windows용 `node_modules` 바이너리가 섞이면 자주 발생합니다.
+
 ---
 
 ## 📊 8. 주요 API 엔드포인트
 
 | Method | Endpoint | 설명 |
 |--------|----------|------|
-| GET | /health | 헬스체크 |
+| GET | /api/health | 헬스체크 |
+| GET | /api/auth/session | refresh cookie 기반 세션 확인 |
 | POST | /api/projects | 프로젝트 생성 |
 | GET | /api/projects | 프로젝트 목록 |
 | GET | /api/projects/:id | 프로젝트 상세 |
@@ -284,6 +339,6 @@ npm install
 npm run dev
 
 # 3. 브라우저에서 확인
-# 프론트엔드: http://localhost:3001
-# API 문서: http://localhost:3000/api/docs
+# 프런트엔드: http://localhost:3000
+# API 문서: http://localhost:3001/api/docs
 ```

@@ -28,13 +28,18 @@ import {
 } from '../dto/project';
 import { PaginatedResponse, ErrorResponseDto } from '../dto/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, In } from 'typeorm';
 import { Project } from '../../scheduling/entities';
 import {
   ProjectPermissionGuard,
   RequireProjectPermission,
   ProjectPermission,
+  CurrentUser,
+  JwtPayload,
+  SystemRole,
 } from '../../auth';
+import { ProjectMember } from '../../notification/entities/project-member.entity';
+import { MemberRole } from '../../notification/types';
 
 @ApiTags('projects')
 @Controller('projects')
@@ -43,6 +48,8 @@ export class ProjectController {
     private readonly projectManagerService: ProjectManagerService,
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
+    @InjectRepository(ProjectMember)
+    private readonly memberRepository: Repository<ProjectMember>,
   ) {}
 
   @Post()
@@ -50,24 +57,69 @@ export class ProjectController {
   @ApiOperation({ summary: '프로젝트 생성', description: '새 웹툰 프로젝트를 생성하고 마스터 스케줄을 자동 계산합니다.' })
   @ApiResponse({ status: 201, description: '프로젝트 생성 성공', type: ProjectResponseDto })
   @ApiResponse({ status: 400, description: '잘못된 요청', type: ErrorResponseDto })
-  async create(@Body() dto: CreateProjectDto): Promise<ProjectResponseDto> {
+  async create(
+    @Body() dto: CreateProjectDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<ProjectResponseDto> {
     const project = await this.projectManagerService.createProject({
       title: dto.title,
       launchDate: new Date(dto.launchDate),
       episodeCount: dto.episodeCount,
       velocityConfig: dto.velocityConfig,
     });
+
+    // 생성자를 PD로 자동 추가
+    const member = this.memberRepository.create({
+      projectId: project.id,
+      userId: user.sub,
+      role: MemberRole.PD,
+      taskType: null,
+    });
+    await this.memberRepository.save(member);
+
     return ProjectResponseDto.fromEntity(project);
   }
 
   @Get()
-  @ApiOperation({ summary: '프로젝트 목록 조회', description: '프로젝트 목록을 페이지네이션하여 조회합니다.' })
+  @ApiOperation({ summary: '프로젝트 목록 조회', description: '사용자가 멤버인 프로젝트 목록을 페이지네이션하여 조회합니다.' })
   @ApiResponse({ status: 200, description: '프로젝트 목록 조회 성공' })
-  async findAll(@Query() query: ProjectQueryDto): Promise<PaginatedResponse<ProjectResponseDto>> {
+  async findAll(
+    @Query() query: ProjectQueryDto,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<PaginatedResponse<ProjectResponseDto>> {
     const { page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'DESC', title } = query;
     const skip = (page - 1) * limit;
 
-    const where: Record<string, unknown> = {};
+    // ADMIN은 모든 프로젝트 조회 가능
+    if (user.systemRole === SystemRole.ADMIN) {
+      const where: Record<string, unknown> = {};
+      if (title) {
+        where.title = Like(`%${title}%`);
+      }
+
+      const [projects, total] = await this.projectRepository.findAndCount({
+        where,
+        order: { [sortBy]: sortOrder },
+        skip,
+        take: limit,
+      });
+
+      const data = projects.map((p) => ProjectResponseDto.fromEntity(p));
+      return PaginatedResponse.create(data, total, page, limit);
+    }
+
+    // 일반 사용자는 멤버인 프로젝트만 조회
+    const memberships = await this.memberRepository.find({
+      where: { userId: user.sub },
+      select: ['projectId'],
+    });
+
+    if (memberships.length === 0) {
+      return PaginatedResponse.create([], 0, page, limit);
+    }
+
+    const projectIds = memberships.map((m) => m.projectId);
+    const where: Record<string, unknown> = { id: In(projectIds) };
     if (title) {
       where.title = Like(`%${title}%`);
     }

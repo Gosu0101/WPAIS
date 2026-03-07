@@ -9,9 +9,11 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { NotificationService } from '../../notification/services/notification.service';
-import { NotificationType } from '../../notification/types';
-import { AlertSeverity } from '../../monitor/types';
 import { CurrentUser, JwtPayload } from '../../auth';
+import {
+  NotificationProjectQueryDto,
+  NotificationQueryDto,
+} from '../dto/notification';
 
 @Controller('notifications')
 export class NotificationController {
@@ -23,32 +25,27 @@ export class NotificationController {
   @Get()
   async getNotifications(
     @CurrentUser() user: JwtPayload,
-    @Query('projectId') projectId?: string,
-    @Query('notificationType') notificationType?: NotificationType,
-    @Query('severity') severity?: AlertSeverity,
-    @Query('isRead') isRead?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() query: NotificationQueryDto,
   ) {
     const options = {
       recipientId: user.sub,
-      projectId,
-      notificationType,
-      severity,
-      isRead: isRead !== undefined ? isRead === 'true' : undefined,
+      projectId: query.projectId,
+      notificationType: query.notificationType,
+      severity: query.severity,
+      isRead: query.isRead,
     };
 
     const result = await this.notificationService.getNotifications(
       options,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
+      query.page ?? 1,
+      query.limit ?? 20,
     );
 
     return {
       data: result.data,
       total: result.total,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 20,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
     };
   }
 
@@ -59,9 +56,9 @@ export class NotificationController {
   @Get('unread-count')
   async getUnreadCount(
     @CurrentUser() user: JwtPayload,
-    @Query('projectId') projectId?: string,
+    @Query() query: NotificationProjectQueryDto,
   ) {
-    return this.notificationService.getUnreadCount(user.sub, projectId);
+    return this.notificationService.getUnreadCount(user.sub, query.projectId);
   }
 
   /**
@@ -84,11 +81,11 @@ export class NotificationController {
   @HttpCode(HttpStatus.OK)
   async markAllAsRead(
     @CurrentUser() user: JwtPayload,
-    @Query('projectId') projectId?: string,
+    @Query() query: NotificationProjectQueryDto,
   ) {
     const count = await this.notificationService.markAllAsRead(
       user.sub,
-      projectId,
+      query.projectId,
     );
     return { success: true, updatedCount: count };
   }

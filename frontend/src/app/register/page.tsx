@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -43,7 +44,11 @@ export default function RegisterPage() {
 
     try {
       await apiClient.auth.register(email, password, name);
-      router.push('/login?registered=true');
+      const redirect = searchParams.get('redirect');
+      const loginUrl = redirect
+        ? `/login?registered=true&redirect=${encodeURIComponent(redirect)}`
+        : '/login?registered=true';
+      router.push(loginUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : '회원가입에 실패했습니다.');
     } finally {
@@ -125,7 +130,14 @@ export default function RegisterPage() {
             </Button>
             <p className="text-sm text-center text-gray-600">
               이미 계정이 있으신가요?{' '}
-              <Link href="/login" className="text-blue-600 hover:underline">
+              <Link
+                href={
+                  searchParams.get('redirect')
+                    ? `/login?redirect=${encodeURIComponent(searchParams.get('redirect')!)}`
+                    : '/login'
+                }
+                className="text-blue-600 hover:underline"
+              >
                 로그인
               </Link>
             </p>

@@ -92,6 +92,27 @@ export class AuthController {
   }
 
   /**
+   * GET /api/auth/session
+   * Refresh Token 기반 세션 유효성 검증
+   */
+  @Public()
+  @Get('session')
+  async session(@Req() request: Request) {
+    const refreshToken = request.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh Token이 없습니다.');
+    }
+
+    const user = await this.authService.validateRefreshSession(refreshToken);
+
+    return {
+      authenticated: true,
+      user,
+    };
+  }
+
+  /**
    * POST /api/auth/logout
    * 로그아웃
    */
