@@ -42,7 +42,7 @@ export function useNotifications(
 ) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   
-  const params = new URLSearchParams({ recipientId });
+  const params = new URLSearchParams();
   if (options?.projectId) params.append('projectId', options.projectId);
   if (options?.notificationType) params.append('notificationType', options.notificationType);
   if (options?.isRead !== undefined) params.append('isRead', String(options.isRead));
@@ -60,7 +60,7 @@ export function useNotifications(
 export function useUnreadCount(recipientId: string, projectId?: string) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   
-  const params = new URLSearchParams({ recipientId });
+  const params = new URLSearchParams();
   if (projectId) params.append('projectId', projectId);
 
   return useQuery<UnreadCountResponse>({
@@ -79,6 +79,7 @@ export function useMarkAsRead() {
       apiClient.post(`/notifications/${notificationId}/read`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 }
@@ -87,13 +88,14 @@ export function useMarkAllAsRead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ recipientId, projectId }: { recipientId: string; projectId?: string }) => {
-      const params = new URLSearchParams({ recipientId });
+    mutationFn: ({ projectId }: { recipientId: string; projectId?: string }) => {
+      const params = new URLSearchParams();
       if (projectId) params.append('projectId', projectId);
       return apiClient.post(`/notifications/read-all?${params.toString()}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     },
   });
 }

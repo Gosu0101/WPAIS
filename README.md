@@ -106,6 +106,13 @@
 - `@Public()`이 지정된 엔드포인트만 비로그인 접근이 가능합니다.
 - 일부 프로젝트 API는 프로젝트 권한 가드로 추가 보호됩니다.
 
+### 2.7 알림 모델과 설정 경계
+
+- 헤더와 `/notifications`는 사용자 단위 `notifications`를 사용합니다.
+- `/projects/{id}/alerts`는 프로젝트 상태 분석 결과인 `alerts`를 보여줍니다.
+- `/settings`는 계정과 전역 진입점을 다루고, 실제 프로젝트 알림 규칙 수정은 `/projects/{id}/settings/notifications`에서 처리합니다.
+- 즉, 사용자에게 도착한 메시지는 `notifications`, 프로젝트 건강도와 리스크 신호는 `alerts`로 구분합니다.
+
 ## 3. 시스템 구성
 
 ### 3.1 백엔드
@@ -195,6 +202,10 @@ DATABASE_CONNECT_TIMEOUT=10000
 JWT_SECRET=replace-with-a-long-random-secret
 JWT_EXPIRES_IN=15m
 REFRESH_TOKEN_EXPIRES_IN=7d
+LOGIN_RATE_LIMIT_WINDOW_MS=900000
+LOGIN_RATE_LIMIT_MAX=5
+API_RATE_LIMIT_WINDOW_MS=60000
+API_RATE_LIMIT_MAX=300
 ```
 
 설명:
@@ -202,6 +213,8 @@ REFRESH_TOKEN_EXPIRES_IN=7d
 - `FRONTEND_URL`: CORS 허용 출처입니다. 로컬 기본 프런트 주소는 `http://localhost:3000`입니다.
 - `JWT_SECRET`: 인증 기능에 필요합니다. 개발 환경에서도 반드시 지정하는 것을 권장합니다.
 - `PORT`: 백엔드 기본 포트입니다. 로컬 기본값은 `3001`입니다.
+- 로그인 rate limit 기본값은 15분당 5회입니다.
+- 일반 API rate limit 기본값은 1분당 300회입니다.
 
 ### 6.2 프런트엔드 `frontend/.env.local`
 
@@ -258,6 +271,20 @@ npm run start:watch
 
 - API 서버: `http://localhost:3001`
 - Swagger 문서: `http://localhost:3001/api/docs`
+
+실행 모드 차이:
+
+- `npm run start`: 빌드된 `dist/main.js` 실행
+- `npm run start:dev`: 현재 `src` 실행, 자동 재시작 없음
+- `npm run start:watch`: 현재 `src` 실행, 파일 저장 시 자동 재시작
+
+개발 중에는 `start:watch`를 기본값으로 권장합니다. `start`는 최신 빌드를 다시 만들지 않았다면 예전 인증 라우트나 API 스키마를 그대로 띄울 수 있습니다.
+
+### 7.5 Rate Limit 동작
+
+- `POST /api/auth/login`은 IP + 이메일 기준으로 rate limit이 적용됩니다.
+- 그 외 `/api/*` 요청은 IP 기준 일반 rate limit이 적용됩니다.
+- limit 초과 시 `429 Too Many Requests`와 함께 `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` 헤더를 반환합니다.
 - Health Check: `http://localhost:3001/api/health`
 
 주의:

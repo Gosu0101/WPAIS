@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Plus,
   Calendar,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,13 @@ const navItems: NavItem[] = [
     icon: Bell,
     requiresProject: true,
     getProjectHref: (projectId) => `/projects/${projectId}/alerts`,
+  },
+  {
+    title: "멤버",
+    href: "/members",
+    icon: Users,
+    requiresProject: true,
+    getProjectHref: (projectId) => `/projects/${projectId}/members`,
   },
 ];
 

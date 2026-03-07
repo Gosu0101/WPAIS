@@ -1,9 +1,13 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './api/filters';
+import {
+  buildLoginRateLimitKey,
+  createRateLimitMiddleware,
+} from './common/rate-limit/rate-limit.middleware';
 
 function getAllowedOrigins(): string[] {
   const configuredOrigins = (process.env.FRONTEND_URL || '')
@@ -22,6 +26,7 @@ function getAllowedOrigins(): string[] {
 }
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
 
   // Cookie Parser
@@ -69,6 +74,28 @@ async function bootstrap() {
     optionsSuccessStatus: 204,
   });
 
+  app.use(
+    '/api/auth/login',
+    createRateLimitMiddleware({
+      id: 'auth-login',
+      windowMs: Number(process.env.LOGIN_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+      maxRequests: Number(process.env.LOGIN_RATE_LIMIT_MAX || 5),
+      message: '로그인 시도가 너무 많습니다. 잠시 후 다시 시도하세요.',
+      keyGenerator: buildLoginRateLimitKey,
+    }),
+  );
+
+  app.use(
+    '/api',
+    createRateLimitMiddleware({
+      id: 'api',
+      windowMs: Number(process.env.API_RATE_LIMIT_WINDOW_MS || 60 * 1000),
+      maxRequests: Number(process.env.API_RATE_LIMIT_MAX || 300),
+      message: '요청이 너무 많습니다. 잠시 후 다시 시도하세요.',
+      skip: (request) => request.path === '/auth/login',
+    }),
+  );
+
   // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('WPAIS API')
@@ -86,8 +113,8 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger docs available at: http://localhost:${port}/api/docs`);
+  logger.log(`Application is running on: http://localhost:${port}`);
+  logger.log(`Swagger docs available at: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

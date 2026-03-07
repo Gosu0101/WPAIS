@@ -23,6 +23,10 @@ import * as Joi from 'joi';
         JWT_SECRET: Joi.string().default('default-secret'),
         JWT_EXPIRES_IN: Joi.string().default('15m'),
         REFRESH_TOKEN_EXPIRES_IN: Joi.string().default('7d'),
+        LOGIN_RATE_LIMIT_WINDOW_MS: Joi.number().default(900000),
+        LOGIN_RATE_LIMIT_MAX: Joi.number().default(5),
+        API_RATE_LIMIT_WINDOW_MS: Joi.number().default(60000),
+        API_RATE_LIMIT_MAX: Joi.number().default(300),
       }),
       validationOptions: {
         allowUnknown: true,

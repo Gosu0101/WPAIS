@@ -9,6 +9,7 @@ import type { Notification } from '@/lib/hooks/use-notifications';
 interface NotificationItemProps {
   notification: Notification;
   onMarkAsRead?: (id: string) => void;
+  isPending?: boolean;
 }
 
 const severityConfig = {
@@ -18,7 +19,11 @@ const severityConfig = {
   CRITICAL: { icon: XCircle, color: 'text-red-500', bg: 'bg-red-50' },
 };
 
-export function NotificationItem({ notification, onMarkAsRead }: NotificationItemProps) {
+export function NotificationItem({
+  notification,
+  onMarkAsRead,
+  isPending = false,
+}: NotificationItemProps) {
   const config = severityConfig[notification.severity];
   const Icon = config.icon;
 
@@ -26,6 +31,7 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
     <div
       className={cn(
         'flex items-start gap-3 p-4 border-b cursor-pointer hover:bg-gray-50 transition-colors',
+        isPending && 'opacity-60',
         !notification.isRead && 'bg-blue-50/30'
       )}
       onClick={() => !notification.isRead && onMarkAsRead?.(notification.id)}
@@ -49,6 +55,9 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
             locale: ko,
           })}
         </p>
+        {isPending ? (
+          <p className="text-xs text-muted-foreground mt-2">읽음 처리 중...</p>
+        ) : null}
       </div>
     </div>
   );

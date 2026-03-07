@@ -5,3 +5,4 @@ export * from "./use-workflow";
 export * from "./use-alerts";
 export * from "./use-milestones";
 export * from "./use-calendar";
+export * from "./use-project-members";

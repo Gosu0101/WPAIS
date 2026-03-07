@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth-context';
@@ -39,6 +39,40 @@ async function waitForSessionReady(retries = 5, delayMs = 150) {
   }
 }
 
+type LoginStep = 'idle' | 'authenticating' | 'verifying-session' | 'redirecting';
+
+function getStepLabel(step: LoginStep) {
+  switch (step) {
+    case 'authenticating':
+      return '자격 증명을 확인하는 중입니다.';
+    case 'verifying-session':
+      return '세션 쿠키를 확인하는 중입니다.';
+    case 'redirecting':
+      return '다음 화면으로 이동하는 중입니다.';
+    default:
+      return null;
+  }
+}
+
+function getFriendlyError(error: string | null) {
+  if (!error) {
+    return null;
+  }
+
+  if (error.includes('세션이 아직 준비되지 않았습니다')) {
+    return {
+      title: '세션 연결이 지연되고 있습니다.',
+      description:
+        '로그인은 성공했지만 세션 확인이 늦어지고 있습니다. 잠시 후 다시 시도하고, 백엔드가 `npm run start:watch` 또는 `npm run start:dev`로 실행 중인지 확인하세요.',
+    };
+  }
+
+  return {
+    title: '로그인에 실패했습니다.',
+    description: error,
+  };
+}
+
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -46,19 +80,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<LoginStep>('idle');
   const redirectTo = getSafeRedirectTarget(searchParams.get('redirect'));
+  const errorDetails = useMemo(() => getFriendlyError(error), [error]);
+  const stepLabel = getStepLabel(step);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
+    setStep('authenticating');
 
     try {
       await login(email, password);
+      setStep('verifying-session');
       await waitForSessionReady();
+      setStep('redirecting');
       window.location.replace(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
+      setStep('idle');
     } finally {
       setIsLoading(false);
     }
@@ -75,9 +116,20 @@ export default function LoginPage() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md text-sm">
-                {error}
+            {redirectTo !== '/' && (
+              <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+                로그인 후 <span className="font-medium">{redirectTo}</span>로 이동합니다.
+              </div>
+            )}
+            {errorDetails && (
+              <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <p className="font-medium">{errorDetails.title}</p>
+                <p className="mt-1 whitespace-pre-line">{errorDetails.description}</p>
+              </div>
+            )}
+            {isLoading && stepLabel && (
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                {stepLabel}
               </div>
             )}
             <div className="space-y-2">
@@ -107,7 +159,7 @@ export default function LoginPage() {
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? '로그인 중...' : '로그인'}
+              {isLoading ? '처리 중...' : '로그인'}
             </Button>
             <p className="text-sm text-center text-gray-600">
               계정이 없으신가요?{' '}

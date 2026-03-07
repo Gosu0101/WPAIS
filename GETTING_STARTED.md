@@ -68,6 +68,20 @@ npm run start:watch
 
 개발 중에는 `start`보다 `start:watch`를 권장합니다. `start`는 최신 빌드를 하지 않았다면 예전 코드가 뜰 수 있습니다.
 
+기본 rate limit:
+
+- 로그인: 15분 동안 5회
+- 일반 API: 1분 동안 300회
+
+필요하면 `.env`에서 아래 값으로 조정할 수 있습니다.
+
+```env
+LOGIN_RATE_LIMIT_WINDOW_MS=900000
+LOGIN_RATE_LIMIT_MAX=5
+API_RATE_LIMIT_WINDOW_MS=60000
+API_RATE_LIMIT_MAX=300
+```
+
 ### 2.4 API 문서 확인
 브라우저에서 Swagger 문서 확인:
 ```
@@ -233,13 +247,23 @@ curl -X POST http://localhost:3001/api/pages/{page-id}/tasks/BACKGROUND/complete
 | 페이지 | URL | 설명 |
 |--------|-----|------|
 | 홈 | http://localhost:3000 | 프로젝트 목록 |
+| 전역 알림 | http://localhost:3000/notifications | 사용자 알림 센터 |
+| 설정 | http://localhost:3000/settings | 계정/진입 설정 |
 | 프로젝트 목록 | http://localhost:3000/projects | 전체 프로젝트 |
 | 프로젝트 생성 | http://localhost:3000/projects/new | 새 프로젝트 |
 | 프로젝트 대시보드 | http://localhost:3000/projects/{id} | 상세 대시보드 |
 | 에피소드 목록 | http://localhost:3000/projects/{id}/episodes | 에피소드 관리 |
 | 에피소드 상세 | http://localhost:3000/episodes/{id} | 워크플로우 보드 |
 | 마일스톤 | http://localhost:3000/projects/{id}/milestones | 타임라인 |
-| 알림 | http://localhost:3000/projects/{id}/alerts | 알림 히스토리 |
+| 프로젝트 Alerts | http://localhost:3000/projects/{id}/alerts | 프로젝트 리스크/상태 알림 히스토리 |
+| 프로젝트 멤버 | http://localhost:3000/projects/{id}/members | 프로젝트 멤버 관리 |
+| 프로젝트 알림 설정 | http://localhost:3000/projects/{id}/settings/notifications | 프로젝트별 수신 규칙 |
+
+알림 모델 기준:
+
+- `notifications`: 사용자에게 전달되는 읽음/미확인 알림. 헤더 벨과 `/notifications`에서 확인합니다.
+- `alerts`: 프로젝트 건강도, 위험도, 일정 이상 징후 같은 프로젝트 스코프 신호. `/projects/{id}/alerts`에서 확인합니다.
+- `/settings`는 계정과 진입점이고, 실제 프로젝트 알림 규칙 변경은 프로젝트 설정 화면에서 처리합니다.
 
 ### 6.2 테스트 시나리오
 
@@ -298,6 +322,13 @@ taskkill /PID {PID} /F
 
 - `GET /api/auth/session`이 `401`이면 라우트는 존재하고 쿠키/세션 문제입니다.
 - `GET /api/auth/session`이 `404`면 실행 중인 백엔드 코드가 오래됐을 가능성이 높습니다.
+
+### 429 Too Many Requests가 뜰 때
+확인 순서:
+
+1. 로그인 반복 시도 중이면 잠시 기다린 뒤 다시 시도
+2. `.env`의 `LOGIN_RATE_LIMIT_*`, `API_RATE_LIMIT_*` 값 확인
+3. 응답 헤더의 `Retry-After` 값을 보고 재시도 시점 확인
 
 ### 마이그레이션 오류
 ```bash

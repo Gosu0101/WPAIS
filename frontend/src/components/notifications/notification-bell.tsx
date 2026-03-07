@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -51,8 +52,15 @@ export function NotificationBell({ recipientId, projectId }: NotificationBellPro
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="end">
-        <div className="h-[500px]">
+        <div className="h-[460px]">
           <NotificationList recipientId={recipientId} projectId={projectId} />
+        </div>
+        <div className="border-t border-border p-3">
+          <Link href="/notifications" onClick={() => setOpen(false)}>
+            <Button variant="outline" className="w-full">
+              전체 알림 보기
+            </Button>
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

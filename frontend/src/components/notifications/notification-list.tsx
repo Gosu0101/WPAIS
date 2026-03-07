@@ -52,10 +52,9 @@ export function NotificationList({ recipientId, projectId }: NotificationListPro
       </div>
     );
   }
-
-
   const notifications = data?.data || [];
   const total = data?.total || 0;
+  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -79,7 +78,7 @@ export function NotificationList({ recipientId, projectId }: NotificationListPro
             variant="outline"
             size="sm"
             onClick={handleMarkAllAsRead}
-            disabled={markAllAsRead.isPending}
+            disabled={markAllAsRead.isPending || unreadCount === 0}
           >
             <CheckCheck className="h-4 w-4 mr-1" />
             모두 확인
@@ -99,6 +98,7 @@ export function NotificationList({ recipientId, projectId }: NotificationListPro
               key={notification.id}
               notification={notification}
               onMarkAsRead={handleMarkAsRead}
+              isPending={markAsRead.isPending && markAsRead.variables === notification.id}
             />
           ))
         )}

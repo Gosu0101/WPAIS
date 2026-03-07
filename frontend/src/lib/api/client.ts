@@ -293,6 +293,23 @@ export interface Milestone {
   completedAt?: string | null;
 }
 
+export type MemberRole = 'PD' | 'WORKER';
+
+export type WorkflowTaskType =
+  | 'BACKGROUND'
+  | 'LINE_ART'
+  | 'COLORING'
+  | 'POST_PROCESSING';
+
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: MemberRole;
+  taskType: WorkflowTaskType | null;
+  createdAt: string;
+}
+
 export const apiClient = {
   // Auth endpoints
   auth: {
@@ -338,6 +355,12 @@ export const apiClient = {
     fetchApi<T>(endpoint, {
       method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
+    }),
+
+  // Generic DELETE method
+  delete: <T = unknown>(endpoint: string) =>
+    fetchApi<T>(endpoint, {
+      method: 'DELETE',
     }),
 
   projects: {
@@ -440,6 +463,45 @@ export const apiClient = {
   milestones: {
     list: (projectId: string) =>
       fetchApi<Milestone[]>(`/projects/${projectId}/milestones`),
+  },
+
+  members: {
+    list: (projectId: string) =>
+      fetchApi<{ data: ProjectMember[] }>(`/projects/${projectId}/members`),
+    add: (
+      projectId: string,
+      data: {
+        userId: string;
+        role: MemberRole;
+        taskType?: WorkflowTaskType;
+      },
+    ) =>
+      fetchApi<{ success: boolean; member: ProjectMember }>(
+        `/projects/${projectId}/members`,
+        {
+          method: 'POST',
+          body: JSON.stringify(data),
+        },
+      ),
+    update: (
+      projectId: string,
+      memberId: string,
+      data: {
+        role?: MemberRole;
+        taskType?: WorkflowTaskType | null;
+      },
+    ) =>
+      fetchApi<{ success: boolean; member: ProjectMember }>(
+        `/projects/${projectId}/members/${memberId}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify(data),
+        },
+      ),
+    remove: (projectId: string, memberId: string) =>
+      fetchApi<{ success: boolean }>(`/projects/${projectId}/members/${memberId}`, {
+        method: 'DELETE',
+      }),
   },
 
   calendar: {

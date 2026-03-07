@@ -3,8 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 const BACKEND_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+function getBackendApiBaseUrl() {
+  return process.env.NEXT_PUBLIC_API_URL || BACKEND_API_BASE_URL;
+}
+
 function buildBackendUrl(path: string[], request: NextRequest) {
-  const url = new URL(`${BACKEND_API_BASE_URL.replace(/\/$/, '')}/${path.join('/')}`);
+  const url = new URL(
+    `${getBackendApiBaseUrl().replace(/\/$/, '')}/${path.join('/')}`,
+  );
   url.search = request.nextUrl.search;
   return url.toString();
 }

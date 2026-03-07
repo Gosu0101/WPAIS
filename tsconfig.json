@@ -20,7 +20,8 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "paths": {
-      "@scheduling/*": ["src/scheduling/*"]
+      "@scheduling/*": ["src/scheduling/*"],
+      "@/*": ["frontend/src/*"]
     }
   },
   "include": ["src/**/*"],
