@@ -1,0 +1,60 @@
+# WPAIS MCP catalog template
+# 목적: 클라이언트별 JSON/YAML 포맷으로 변환하기 전에 공통 정보를 한 곳에 두기 위한 source-of-truth
+
+servers:
+  github:
+    enabled: false
+    purpose: "repository browsing, PR review, issue and commit automation"
+    transport: "<stdio|http|sse>"
+    command: "<client-specific launcher>"
+    args: []
+    env:
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+    use_when:
+      - "PR review"
+      - "issue tracking"
+      - "task checkpoint commit/push"
+
+  notion:
+    enabled: false
+    purpose: "project status updates and checkpoint sync"
+    transport: "<stdio|http|sse>"
+    command: "<client-specific launcher>"
+    args: []
+    env:
+      NOTION_TOKEN: "${NOTION_TOKEN}"
+      NOTION_PAGE_ID: "${NOTION_PAGE_ID}"
+    use_when:
+      - "checkpoint update"
+      - "worklog sync"
+
+  postgres:
+    enabled: false
+    purpose: "schema inspection and migration verification"
+    transport: "<stdio|http|sse>"
+    command: "<client-specific launcher>"
+    args: []
+    env:
+      DATABASE_URL: "${DATABASE_URL}"
+    use_when:
+      - "migration review"
+      - "schema validation"
+      - "production-safe read-only inspection"
+
+  docs:
+    enabled: false
+    purpose: "upstream library docs lookup"
+    transport: "<stdio|http|sse>"
+    command: "<client-specific launcher>"
+    args: []
+    env: {}
+    use_when:
+      - "library API lookup"
+      - "version-specific docs verification"
+
+policies:
+  use_env_placeholders: true
+  avoid_hardcoded_tokens: true
+  prefer_read_only_for_prod_data: true
+  log_sensitive_actions: true
+
