@@ -1,22 +1,52 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth-context';
+import { apiClient } from '@/lib/api/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
+function getSafeRedirectTarget(redirect: string | null) {
+  if (!redirect || !redirect.startsWith('/')) {
+    return '/';
+  }
+
+  if (redirect.startsWith('//')) {
+    return '/';
+  }
+
+  return redirect;
+}
+
+async function waitForSessionReady(retries = 5, delayMs = 150) {
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      await apiClient.auth.session();
+      return;
+    } catch {
+      if (attempt === retries - 1) {
+        throw new Error('세션이 아직 준비되지 않았습니다.');
+      }
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, delayMs);
+      });
+    }
+  }
+}
+
 export default function LoginPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const redirectTo = getSafeRedirectTarget(searchParams.get('redirect'));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,8 +55,8 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      const redirectTo = searchParams.get('redirect') || '/';
-      router.push(redirectTo);
+      await waitForSessionReady();
+      window.location.replace(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
     } finally {

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { apiClient, setAccessToken as setClientAccessToken } from '../api/client';
 
 export interface User {
@@ -24,6 +25,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,6 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // 초기 로드 시 토큰 갱신 시도
   useEffect(() => {
+    if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+      setIsLoading(false);
+      return;
+    }
+
     const initAuth = async () => {
       try {
         await refreshToken();
@@ -83,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     initAuth();
-  }, [refreshToken]);
+  }, [pathname, refreshToken]);
 
   return (
     <AuthContext.Provider

@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getApiBaseUrl } from '@/lib/api/base-url';
 
 // 인증이 필요하지 않은 공개 경로
 const publicPaths = ['/login', '/register'];
 
 // 정적 파일 및 API 경로 제외
 const excludedPaths = ['/_next', '/api', '/favicon.ico'];
-
-function getApiBaseUrl() {
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-}
 
 function buildLoginRedirect(request: NextRequest) {
   const loginUrl = new URL('/login', request.url);
@@ -18,7 +15,7 @@ function buildLoginRedirect(request: NextRequest) {
   return loginUrl;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 정적 파일 및 API 경로는 건너뛰기
@@ -40,13 +37,16 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${getApiBaseUrl()}/auth/session`, {
+    const response = await fetch(
+      `${getApiBaseUrl(request.nextUrl.origin)}/auth/session`,
+      {
       method: 'GET',
       headers: {
         Cookie: request.headers.get('cookie') || '',
       },
       cache: 'no-store',
-    });
+      },
+    );
 
     if (!response.ok) {
       const redirectResponse = NextResponse.redirect(buildLoginRedirect(request));

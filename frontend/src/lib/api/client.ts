@@ -1,5 +1,12 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
+import { getApiBaseUrl } from './base-url';
+
+function getBrowserApiBaseUrl() {
+  if (typeof window === 'undefined') {
+    return getApiBaseUrl();
+  }
+
+  return getApiBaseUrl(window.location.origin);
+}
 
 // 토큰 저장소 (메모리)
 let accessToken: string | null = null;
@@ -15,7 +22,7 @@ export function getAccessToken(): string | null {
 
 // 토큰 갱신 함수
 async function refreshAccessToken(): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+  const response = await fetch(`${getBrowserApiBaseUrl()}/auth/refresh`, {
     method: 'POST',
     credentials: 'include', // HttpOnly 쿠키 포함
     headers: {
@@ -36,7 +43,7 @@ async function fetchApi<T>(
   endpoint: string,
   options?: RequestInit & { skipAuth?: boolean }
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const url = `${getBrowserApiBaseUrl()}${endpoint}`;
   
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -303,6 +310,11 @@ export const apiClient = {
       fetchApi<{ accessToken: string; user: { id: string; email: string; name: string; systemRole: string } }>(
         '/auth/refresh',
         { method: 'POST', skipAuth: true }
+      ),
+    session: () =>
+      fetchApi<{ authenticated: true; user: { id: string; email: string; name: string; systemRole: string } }>(
+        '/auth/session',
+        { method: 'GET', skipAuth: true }
       ),
     logout: () =>
       fetchApi<{ message: string }>('/auth/logout', { method: 'POST' }),

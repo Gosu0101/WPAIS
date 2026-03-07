@@ -101,7 +101,7 @@
 
 - 액세스 토큰: Authorization Bearer 헤더 사용
 - 리프레시 토큰: HttpOnly 쿠키 사용
-- 프런트 보호 라우트는 서버 미들웨어에서 `GET /api/auth/session`으로 리프레시 토큰 세션을 먼저 검증합니다.
+- 프런트 보호 라우트는 Next.js proxy에서 `GET /api/auth/session`으로 리프레시 토큰 세션을 먼저 검증합니다.
 - 기본적으로 대부분의 API는 인증이 필요합니다.
 - `@Public()`이 지정된 엔드포인트만 비로그인 접근이 가능합니다.
 - 일부 프로젝트 API는 프로젝트 권한 가드로 추가 보호됩니다.
@@ -181,8 +181,8 @@
 
 ```env
 NODE_ENV=development
-PORT=3000
-FRONTEND_URL=http://localhost:3001
+PORT=3001
+FRONTEND_URL=http://localhost:3000
 
 DATABASE_HOST=localhost
 DATABASE_PORT=5432
@@ -199,15 +199,21 @@ REFRESH_TOKEN_EXPIRES_IN=7d
 
 설명:
 
-- `FRONTEND_URL`: CORS 허용 출처입니다. 프런트가 `3001`에서 실행되면 반드시 맞춰주는 편이 안전합니다.
+- `FRONTEND_URL`: CORS 허용 출처입니다. 로컬 기본 프런트 주소는 `http://localhost:3000`입니다.
 - `JWT_SECRET`: 인증 기능에 필요합니다. 개발 환경에서도 반드시 지정하는 것을 권장합니다.
-- `PORT`: 백엔드 기본 포트입니다.
+- `PORT`: 백엔드 기본 포트입니다. 로컬 기본값은 `3001`입니다.
 
 ### 6.2 프런트엔드 `frontend/.env.local`
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 ```
+
+설명:
+
+- 브라우저는 프런트 origin의 `/api/...`로 요청합니다.
+- Next.js route handler가 `/api/*`를 백엔드 `NEXT_PUBLIC_API_URL`로 프록시합니다.
+- 로그인/세션 검증은 이 same-origin `/api` 경로를 사용하므로, 쿠키 기반 인증 흐름이 더 안정적입니다.
 
 ## 7. 로컬 실행 방법
 
@@ -245,19 +251,21 @@ npm run migration:run
 ### 7.4 백엔드 실행
 
 ```bash
-npm run start:dev
+npm run start:watch
 ```
 
 실행 후 확인:
 
-- API 서버: `http://localhost:3000`
-- Swagger 문서: `http://localhost:3000/api/docs`
-- Health Check: `http://localhost:3000/api/health`
+- API 서버: `http://localhost:3001`
+- Swagger 문서: `http://localhost:3001/api/docs`
+- Health Check: `http://localhost:3001/api/health`
 
 주의:
 
 - 애플리케이션은 전역 API prefix로 `api`를 사용합니다.
 - 따라서 대부분의 엔드포인트는 `/api/...` 경로로 접근합니다.
+- 개발 중에는 `npm run start`보다 `npm run start:watch` 또는 `npm run start:dev`를 권장합니다.
+- `npm run start`는 `dist/main.js`를 실행하므로, 최신 코드가 빌드되지 않았다면 예전 서버가 뜰 수 있습니다.
 
 ### 7.5 프런트엔드 실행
 
@@ -267,8 +275,16 @@ npm run start:dev
 npm run dev
 ```
 
-일반적으로 백엔드가 이미 `3000` 포트를 사용 중이면, 프런트는 다른 포트로 실행됩니다.  
-로컬 개발에서는 보통 `http://localhost:3001`을 사용하게 됩니다.
+로컬 기본 조합은 다음과 같습니다.
+
+- 프런트엔드: `http://localhost:3000`
+- 백엔드 API: `http://localhost:3001`
+- 브라우저에서 보이는 API 요청: `http://localhost:3000/api/...`
+
+인증 메모:
+
+- 로그인 후 세션 검증은 프런트의 `/api/auth/session`을 통해 수행됩니다.
+- 이 요청은 Next.js가 백엔드 `http://localhost:3001/api/auth/session`으로 프록시합니다.
 
 ## 8. 빠른 시작 시나리오
 
@@ -416,6 +432,7 @@ npm test -- integration
 npm run build
 npm run start
 npm run start:dev
+npm run start:watch
 npm run test
 npm run test:cov
 npm run migration:generate -- -n MigrationName
@@ -437,6 +454,8 @@ npm run start
 - API 전역 prefix는 `/api`입니다.
 - Swagger 문서는 `/api/docs`에서 확인할 수 있습니다.
 - Health Check는 `GET /api/health`입니다.
+- 로컬 개발 기본 포트는 프런트 `3000`, 백엔드 `3001`입니다.
+- 프런트의 `/api/*`는 Next.js route handler가 백엔드 API로 프록시합니다.
 - 대부분의 API는 JWT 인증이 필요합니다.
 - 테스트 환경은 SQLite 메모리 DB를 사용하므로, PostgreSQL 전용 기능과 100% 동일하지 않을 수 있습니다.
 - WSL에서 테스트 실행 시 `sqlite3`가 Windows 바이너리로 설치되어 있으면 `invalid ELF header`가 날 수 있습니다. 이 경우 루트에서 `npm rebuild sqlite3`를 다시 실행해야 합니다.
