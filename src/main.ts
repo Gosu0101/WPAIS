@@ -5,6 +5,22 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './api/filters';
 
+function getAllowedOrigins(): string[] {
+  const configuredOrigins = (process.env.FRONTEND_URL || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const defaults = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+  ];
+
+  return Array.from(new Set([...configuredOrigins, ...defaults]));
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -30,11 +46,27 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // CORS - credentials 모드 지원
+  const allowedOrigins = getAllowedOrigins();
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, allow?: boolean | string) => void,
+    ) => {
+      // same-origin 요청이나 서버 간 호출은 origin 헤더가 없을 수 있습니다.
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, origin);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 204,
   });
 
   // Swagger Configuration
