@@ -15,6 +15,7 @@
 - `scripts/seed-members.ts`는 안전한 환경 변수 기반 스크립트로 정리되어 커밋됨
 - 현재 남아 있는 대규모 modified 파일은 대부분 `git diff --ignore-cr-at-eol` 기준 실질 내용 변경이 없음
 - 즉 현재 remaining dirty는 주로 줄바꿈(EOL) 차이로 보아야 함
+- 저장소 루트에 `.gitattributes`와 `.editorconfig`를 추가해 앞으로의 EOL 정책은 LF 기준으로 고정함
 
 ## 현재 남은 변경 범위
 
