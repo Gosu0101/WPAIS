@@ -210,4 +210,129 @@ describe('RecipientResolverService', () => {
       expect(recipients).toContain(userId);
     });
   });
+
+  describe('updateMember', () => {
+    it('should update member role and task type', async () => {
+      const existingMember: ProjectMember = {
+        id: 'member-1',
+        projectId: 'project-1',
+        userId: 'user-1',
+        role: MemberRole.WORKER,
+        taskType: TaskType.BACKGROUND,
+        createdAt: new Date(),
+      };
+
+      const updatedMember: ProjectMember = {
+        ...existingMember,
+        role: MemberRole.PD,
+        taskType: null,
+      };
+
+      memberRepository.findOne.mockResolvedValue(existingMember);
+      memberRepository.save.mockResolvedValue(updatedMember);
+
+      const result = await service.updateMember(existingMember.id, {
+        role: MemberRole.PD,
+      });
+
+      expect(result).toEqual(updatedMember);
+      expect(memberRepository.save).toHaveBeenCalledWith({
+        ...existingMember,
+        role: MemberRole.PD,
+      });
+    });
+
+    it('should return null when member does not exist', async () => {
+      memberRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.updateMember('missing-member', {
+        role: MemberRole.PD,
+      });
+
+      expect(result).toBeNull();
+      expect(memberRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('project access helpers', () => {
+    it('should return unique accessible project ids', async () => {
+      memberRepository.find.mockResolvedValue([
+        {
+          id: 'member-1',
+          projectId: 'project-1',
+          userId: 'user-1',
+          role: MemberRole.PD,
+          taskType: null,
+          createdAt: new Date(),
+        },
+        {
+          id: 'member-2',
+          projectId: 'project-2',
+          userId: 'user-1',
+          role: MemberRole.WORKER,
+          taskType: TaskType.COLORING,
+          createdAt: new Date(),
+        },
+        {
+          id: 'member-3',
+          projectId: 'project-1',
+          userId: 'user-1',
+          role: MemberRole.WORKER,
+          taskType: TaskType.LINE_ART,
+          createdAt: new Date(),
+        },
+      ]);
+
+      const result = await service.getAccessibleProjectIds('user-1');
+
+      expect(result).toEqual(['project-1', 'project-2']);
+    });
+
+    it('should filter requested project ids to memberships only', async () => {
+      jest.spyOn(service, 'getAccessibleProjectIds').mockResolvedValue([
+        'project-1',
+        'project-3',
+      ]);
+
+      const result = await service.filterAccessibleProjectIds('user-1', [
+        'project-1',
+        'project-2',
+        'project-3',
+      ]);
+
+      expect(result).toEqual(['project-1', 'project-3']);
+    });
+
+    it('should confirm project membership', async () => {
+      memberRepository.findOne.mockResolvedValue({
+        id: 'member-1',
+        projectId: 'project-1',
+        userId: 'user-1',
+        role: MemberRole.PD,
+        taskType: null,
+        createdAt: new Date(),
+      });
+
+      await expect(
+        service.isProjectMember('project-1', 'user-1'),
+      ).resolves.toBe(true);
+    });
+
+    it('should return project membership entity', async () => {
+      const membership: ProjectMember = {
+        id: 'member-9',
+        projectId: 'project-9',
+        userId: 'user-9',
+        role: MemberRole.WORKER,
+        taskType: TaskType.LINE_ART,
+        createdAt: new Date(),
+      };
+
+      memberRepository.findOne.mockResolvedValue(membership);
+
+      await expect(
+        service.getProjectMembership('project-9', 'user-9'),
+      ).resolves.toEqual(membership);
+    });
+  });
 });

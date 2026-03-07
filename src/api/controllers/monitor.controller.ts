@@ -6,6 +6,7 @@ import {
   Query,
   ParseUUIDPipe,
   NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,9 +25,16 @@ import {
   VelocityQueryDto,
 } from '../dto/monitor';
 import { PaginatedResponse, ErrorResponseDto } from '../dto/common';
+import {
+  ProjectPermission,
+  ProjectPermissionGuard,
+  RequireProjectPermission,
+} from '../../auth';
 
 @ApiTags('monitor')
 @Controller('projects/:projectId')
+@UseGuards(ProjectPermissionGuard)
+@RequireProjectPermission(ProjectPermission.VIEW)
 export class MonitorController {
   constructor(private readonly monitorService: MonitorService) {}
 

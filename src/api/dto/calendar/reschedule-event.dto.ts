@@ -1,12 +1,12 @@
-import { IsDateString, IsEnum, IsString } from 'class-validator';
-import { CalendarEventType } from './calendar-events-query.dto';
+import { IsDateString, IsIn } from 'class-validator';
+import { CALENDAR_EVENT_TYPES, CalendarEventType } from './calendar-events-query.dto';
 import { CalendarEventResponseDto } from './calendar-event-response.dto';
 
 export class RescheduleEventDto {
   @IsDateString()
   newDate: string;
 
-  @IsString()
+  @IsIn(CALENDAR_EVENT_TYPES)
   eventType: CalendarEventType;
 }
 

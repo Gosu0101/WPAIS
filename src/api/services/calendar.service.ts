@@ -5,7 +5,7 @@ import { Episode } from '../../scheduling/entities/episode.entity';
 import { Milestone } from '../../scheduling/entities/milestone.entity';
 import { Project } from '../../scheduling/entities/project.entity';
 import { Page } from '../../workflow/entities/page.entity';
-import { TaskStatus } from '../../workflow/types';
+import { TaskStatus, TaskType } from '../../workflow/types';
 import {
   CalendarEventResponseDto,
   CalendarEventsResponseDto,
@@ -14,7 +14,10 @@ import {
   MilestoneEventProps,
   TaskEventProps,
 } from '../dto/calendar/calendar-event-response.dto';
-import { CalendarEventType } from '../dto/calendar/calendar-events-query.dto';
+import {
+  CALENDAR_EVENT_TYPES,
+  CalendarEventType,
+} from '../dto/calendar/calendar-events-query.dto';
 
 const PROJECT_COLORS = [
   '#ef4444', '#f97316', '#f59e0b', '#84cc16',
@@ -66,7 +69,9 @@ export class CalendarService {
     
     const events: CalendarEventResponseDto[] = [];
     const targetProjectIds = projectIds?.length ? projectIds : projects.map(p => p.id);
-    const eventTypes = types?.length ? types : ['episode', 'milestone', 'task'] as CalendarEventType[];
+    const eventTypes = types?.length
+      ? types
+      : [...CALENDAR_EVENT_TYPES];
 
     if (eventTypes.includes('episode')) {
       const episodes = await this.getEpisodes(startDate, endDate, targetProjectIds);
@@ -133,6 +138,62 @@ export class CalendarService {
     }
 
     return { success: true, warnings };
+  }
+
+  async getEventProjectId(
+    eventId: string,
+    eventType: CalendarEventType,
+  ): Promise<string | null> {
+    if (eventType === 'episode') {
+      const episode = await this.episodeRepository.findOne({
+        where: { id: eventId },
+        select: ['projectId'],
+      });
+      return episode?.projectId ?? null;
+    }
+
+    if (eventType === 'milestone') {
+      const milestone = await this.milestoneRepository.findOne({
+        where: { id: eventId },
+        select: ['projectId'],
+      });
+      return milestone?.projectId ?? null;
+    }
+
+    if (eventType === 'task') {
+      const pageId = this.extractPageIdFromTaskEventId(eventId);
+      if (!pageId) {
+        return null;
+      }
+
+      const page = await this.pageRepository.findOne({
+        where: { id: pageId },
+        select: ['episodeId'],
+      });
+
+      if (!page) {
+        return null;
+      }
+
+      const episode = await this.episodeRepository.findOne({
+        where: { id: page.episodeId },
+        select: ['projectId'],
+      });
+      return episode?.projectId ?? null;
+    }
+
+    return null;
+  }
+
+  private extractPageIdFromTaskEventId(eventId: string): string | null {
+    for (const taskType of Object.values(TaskType)) {
+      const suffix = `-${taskType}`;
+      if (eventId.endsWith(suffix)) {
+        return eventId.slice(0, -suffix.length);
+      }
+    }
+
+    return null;
   }
 
   private async getProjects(projectIds?: string[]): Promise<Project[]> {

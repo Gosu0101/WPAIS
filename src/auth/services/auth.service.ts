@@ -150,44 +150,11 @@ export class AuthService {
    * 토큰 갱신 (Token Rotation 적용)
    */
   async refreshToken(refreshTokenValue: string): Promise<LoginResponse> {
-    // Refresh Token 검증
-    let payload: RefreshTokenPayload;
-    try {
-      payload = this.jwtService.verify<RefreshTokenPayload>(refreshTokenValue, {
-        secret: this.configService.get<string>('JWT_SECRET'),
-      });
-    } catch {
-      throw new UnauthorizedException('유효하지 않은 Refresh Token입니다.');
-    }
-
-    // DB에서 토큰 조회
-    const storedToken = await this.refreshTokenRepository.findOne({
-      where: { id: payload.tokenId },
-    });
-
-    if (!storedToken || storedToken.isRevoked) {
-      throw new UnauthorizedException('Refresh Token이 무효화되었습니다.');
-    }
-
-    if (storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException('Refresh Token이 만료되었습니다.');
-    }
-
-    // 토큰 해시 검증
-    const tokenHash = await this.hashTokenForStorage(refreshTokenValue);
-    // Note: 실제로는 해시 비교가 필요하지만, 간단히 tokenId로 검증
+    const { storedToken, user } =
+      await this.validateRefreshTokenRecord(refreshTokenValue);
 
     // 기존 토큰 무효화 (Token Rotation)
     await this.refreshTokenRepository.update(storedToken.id, { isRevoked: true });
-
-    // 사용자 조회
-    const user = await this.userRepository.findOne({
-      where: { id: payload.sub },
-    });
-
-    if (!user || !user.isActive) {
-      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
-    }
 
     // 새 Access Token 생성
     const accessToken = this.generateAccessToken(user);
@@ -203,6 +170,25 @@ export class AuthService {
         name: user.name,
         systemRole: user.systemRole,
       },
+    };
+  }
+
+  /**
+   * Refresh Token 기반 세션 유효성 검증
+   */
+  async validateRefreshSession(refreshTokenValue: string): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    systemRole: SystemRole;
+  }> {
+    const { user } = await this.validateRefreshTokenRecord(refreshTokenValue);
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      systemRole: user.systemRole,
     };
   }
 
@@ -280,6 +266,43 @@ export class AuthService {
    */
   private async hashTokenForStorage(token: string): Promise<string> {
     return bcrypt.hash(token, 10);
+  }
+
+  private async validateRefreshTokenRecord(refreshTokenValue: string): Promise<{
+    payload: RefreshTokenPayload;
+    storedToken: RefreshToken;
+    user: User;
+  }> {
+    let payload: RefreshTokenPayload;
+    try {
+      payload = this.jwtService.verify<RefreshTokenPayload>(refreshTokenValue, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+    } catch {
+      throw new UnauthorizedException('유효하지 않은 Refresh Token입니다.');
+    }
+
+    const storedToken = await this.refreshTokenRepository.findOne({
+      where: { id: payload.tokenId },
+    });
+
+    if (!storedToken || storedToken.isRevoked) {
+      throw new UnauthorizedException('Refresh Token이 무효화되었습니다.');
+    }
+
+    if (storedToken.expiresAt < new Date()) {
+      throw new UnauthorizedException('Refresh Token이 만료되었습니다.');
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id: payload.sub },
+    });
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    }
+
+    return { payload, storedToken, user };
   }
 
   /**

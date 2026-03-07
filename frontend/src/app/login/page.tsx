@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +25,8 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      router.push('/');
+      const redirectTo = searchParams.get('redirect') || '/';
+      router.push(redirectTo);
     } catch (err) {
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
     } finally {
@@ -79,7 +81,14 @@ export default function LoginPage() {
             </Button>
             <p className="text-sm text-center text-gray-600">
               계정이 없으신가요?{' '}
-              <Link href="/register" className="text-blue-600 hover:underline">
+              <Link
+                href={
+                  searchParams.get('redirect')
+                    ? `/register?redirect=${encodeURIComponent(searchParams.get('redirect')!)}`
+                    : '/register'
+                }
+                className="text-blue-600 hover:underline"
+              >
                 회원가입
               </Link>
             </p>

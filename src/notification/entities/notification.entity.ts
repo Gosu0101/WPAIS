@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { NotificationType } from '../types';
 import { AlertSeverity } from '../../monitor/types';
+import { DATETIME_COLUMN_TYPE } from '../../config/database-column-types';
 
 @Entity('notifications')
 @Index(['projectId', 'recipientId', 'createdAt'])
@@ -41,7 +42,7 @@ export class Notification {
   @Column({ default: false })
   isRead: boolean;
 
-  @Column({ type: 'timestamp', nullable: true })
+  @Column({ type: DATETIME_COLUMN_TYPE, nullable: true })
   readAt: Date | null;
 
   @CreateDateColumn()

@@ -271,4 +271,74 @@ describe('AuthService', () => {
       expect((result as any).passwordHash).toBeUndefined();
     });
   });
+
+  describe('validateRefreshSession', () => {
+    it('should return user info for a valid refresh token', async () => {
+      const user: User = {
+        id: 'user-1',
+        email: 'user@example.com',
+        passwordHash: 'hashed-password',
+        name: 'Test User',
+        systemRole: SystemRole.USER,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const storedToken: RefreshToken = {
+        id: 'token-1',
+        userId: user.id,
+        user,
+        tokenHash: 'hashed-token',
+        expiresAt: new Date(Date.now() + 60_000),
+        isRevoked: false,
+        createdAt: new Date(),
+      };
+
+      mockJwtService.verify.mockReturnValue({
+        sub: user.id,
+        tokenId: storedToken.id,
+      });
+      mockRefreshTokenRepository.findOne.mockResolvedValue(storedToken);
+      mockUserRepository.findOne.mockResolvedValue(user);
+
+      const result = await service.validateRefreshSession('refresh-token');
+
+      expect(result).toEqual({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        systemRole: user.systemRole,
+      });
+    });
+
+    it('should reject revoked refresh tokens', async () => {
+      mockJwtService.verify.mockReturnValue({
+        sub: 'user-1',
+        tokenId: 'token-1',
+      });
+      mockRefreshTokenRepository.findOne.mockResolvedValue({
+        id: 'token-1',
+        userId: 'user-1',
+        user: {
+          id: 'user-1',
+          email: 'revoked@example.com',
+          passwordHash: 'hashed-password',
+          name: 'Revoked User',
+          systemRole: SystemRole.USER,
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as User,
+        tokenHash: 'hashed-token',
+        expiresAt: new Date(Date.now() + 60_000),
+        isRevoked: true,
+        createdAt: new Date(),
+      } as RefreshToken);
+
+      await expect(
+        service.validateRefreshSession('refresh-token'),
+      ).rejects.toThrow('Refresh Token이 무효화되었습니다.');
+    });
+  });
 });
