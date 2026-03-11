@@ -167,6 +167,7 @@
   - notification: 알림, 프로젝트 멤버, 알림 설정
   - auth: JWT, refresh token, guards
   - api: REST controller, DTO, exception filter
+```
 
   ## Technical Highlights
 
