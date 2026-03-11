@@ -158,7 +158,7 @@
     -> notification
     -> api
   database (PostgreSQL)
-
+```
   도메인 모듈은 다음처럼 나눴습니다.
 
   - scheduling: 프로젝트, 에피소드, 마일스톤 일정 계산
@@ -167,7 +167,7 @@
   - notification: 알림, 프로젝트 멤버, 알림 설정
   - auth: JWT, refresh token, guards
   - api: REST controller, DTO, exception filter
-```
+
 
   ## Technical Highlights
 
@@ -260,7 +260,7 @@
   - 모니터링 계산
 
   ## Project Structure
-
+```
   .
   ├─ src/
   │  ├─ api/
@@ -281,7 +281,7 @@
   ├─ scripts/
   ├─ infmd/
   └─ GETTING_STARTED.md
-
+```
   ## Running Locally
 
   ### Backend
