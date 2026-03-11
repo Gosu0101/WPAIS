@@ -1,515 +1,370 @@
 # WPAIS
 
-웹툰 제작 AI 지원 시스템(WPAIS)입니다.  
-프로젝트 일정 계산, 에피소드 단위 제작 관리, 페이지 공정 워크플로우, 진행률 모니터링, 알림, 캘린더, 인증 기능을 하나의 서비스로 묶은 풀스택 애플리케이션입니다.
+  > 웹툰 제작 일정, 공정, 모니터링, 알림을 통합 관리하는 풀스택 제작 운영 시스템
+  > Webtoon Production AI Support System
 
-백엔드는 NestJS + TypeORM + PostgreSQL 기반이며, 프런트엔드는 Next.js(App Router) 기반으로 구성되어 있습니다.
+  [![Backend](https://img.shields.io/badge/Backend-NestJS-E0234E?logo=nestjs&logoColor=white)](#)
+  [![Frontend](https://img.shields.io/badge/Frontend-Next.js-000000?logo=nextdotjs&logoColor=white)](#)
+  [![Language](https://img.shields.io/badge/Language-TypeScript-3178C6?logo=typescript&logoColor=white)](#)
+  [![Database](https://img.shields.io/badge/Database-PostgreSQL-4169E1?logo=postgresql&logoColor=white)](#)
+  [![Testing](https://img.shields.io/badge/Testing-Jest%20%2B%20Supertest-99425B)](#)
 
-## 1. 프로젝트 개요
+  ## Project Summary
 
-이 프로젝트는 웹툰 제작 과정에서 반복적으로 발생하는 다음 문제를 줄이기 위해 만들어졌습니다.
+  WPAIS는 웹툰 제작 과정에서 반복적으로 발생하는 일정 지연, 공정 병목, 마감 리스크를 줄이기 위해 만든 **제작 운영 지원
+  시스템**입니다.
 
-- 런칭일에 맞춘 제작 일정 역산
-- 에피소드별 마감일과 마일스톤 관리
-- 페이지 단위 공정 상태 추적
-- 프로젝트 전체 진행률과 병목 구간 파악
-- 위험 신호와 알림 관리
-- 팀원별 역할과 프로젝트 접근 제어
+  런칭일이 정해지면 제작 일정을 역산해 프로젝트를 세팅하고,
+  에피소드와 페이지 단위 작업 흐름을 관리하며,
+  대시보드에서 진행률, 버퍼, 속도, 리스크, 건강도를 한 번에 확인할 수 있도록 설계했습니다.
 
-핵심적으로는 "런칭일이 정해지면 제작 일정을 계산하고, 실제 작업 진행 상태를 반영해 프로젝트 건강도를 추적하는 시스템"입니다.
+  현재 저장소에 구현된 범위는 다음에 집중되어 있습니다.
 
-## 2. 주요 기능
+  - 런칭일 기준 제작 일정 자동 계산
+  - 페이지 공정 상태 전이 관리
+  - 프로젝트 건강도 모니터링
+  - 알림 및 프로젝트 멤버 관리
+  - JWT 기반 인증/세션 처리
+  - Next.js 기반 운영 UI
 
-### 2.1 프로젝트 및 일정 관리
+  ## Why I Built This
 
-- 프로젝트 생성 시 런칭일 기준으로 마스터 스케줄을 계산합니다.
-- 프로젝트별 `sealDate`, `productionStartDate`, `hiringStartDate`, `planningStartDate`를 자동 산출합니다.
-- 프로젝트 수정 시 런칭일이 바뀌면 전체 일정과 마일스톤을 재계산합니다.
-- 마일스톤 목록을 날짜순으로 조회할 수 있습니다.
+  웹툰 제작은 단순한 TODO 관리보다 훨씬 복잡합니다.
+
+  - 런칭일 기준으로 선행 일정이 역산되어야 하고
+  - 회차별 제작 속도가 항상 일정하지 않으며
+  - 페이지 단위 공정은 선행 작업 의존성을 가지며
+  - 일정 지연은 전체 프로젝트 리스크로 연결됩니다
+
+  이 프로젝트는 이런 문제를 단순한 게시판형 관리가 아니라
+  **도메인 규칙이 반영된 운영 시스템**으로 풀어내는 것을 목표로 했습니다.
+
+  ## Problem to Solve
+
+  기존 제작 관리 방식의 문제는 크게 네 가지였습니다.
+
+  - 런칭일은 정해졌는데 제작 시작일과 중간 마일스톤이 수동 계산에 의존함
+  - 페이지 단위 작업 상태가 흩어져 있어 병목 구간을 빠르게 파악하기 어려움
+  - 프로젝트가 얼마나 건강한지 정량적으로 보기 어려움
+  - 권한, 세션, 알림이 분리되어 협업 운영 흐름이 끊김
+
+  ## Solution
+
+  WPAIS는 이 문제를 다음 구조로 해결합니다.
+
+  ### 1. 스케줄링 엔진
+  런칭일과 회차 수를 입력하면 아래 일정을 자동 계산합니다.
+
+  - seal date
+  - production start date
+  - hiring start date
+  - planning start date
+  - episode별 due date
+  - milestone 목록
+
+  특히 초반 적응기와 이후 정상기의 속도 차이를 반영해
+  회차별 제작 기간을 다르게 계산하는 구조를 적용했습니다.
+
+  ### 2. 페이지 공정 워크플로우 엔진
+  페이지는 다음 4단계 공정을 가집니다.
+
+  - `BACKGROUND`
+  - `LINE_ART`
+  - `COLORING`
+  - `POST_PROCESSING`
+
+  각 공정은 다음 상태를 가집니다.
+
+  - `LOCKED`
+  - `READY`
+  - `IN_PROGRESS`
+  - `DONE`
+
+  선행 작업이 완료되어야 다음 작업이 열리도록 상태 전이를 강제했고,
+  작업 완료 시 후속 공정이 자동으로 열리도록 구현했습니다.
+
+  ### 3. 모니터링 대시보드
+  프로젝트 단위로 아래 지표를 집계합니다.
+
+  - 진행률
+  - 버퍼 상태
+  - 속도 분석
+  - 리스크 수준
+  - seal countdown
+  - health score
+  - alert history
+
+  즉, 단순 현황판이 아니라
+  프로젝트가 일정상 안전한지 위험한지를 판단할 수 있는 운영 대시보드를 목표로 했습니다.
+
+  ### 4. 인증 / 권한 / 알림
+  운영 도구로 쓰기 위해 다음 기능을 함께 구성했습니다.
 
-### 2.2 에피소드 관리
+  - 회원가입 / 로그인 / 로그아웃
+  - access token + refresh cookie 기반 세션 구조
+  - 프로젝트 권한 가드
+  - 사용자 알림 / 프로젝트 alert 분리
+  - 프로젝트 멤버 조회 및 관리
+  - 프로젝트별 알림 설정
+
+  ## Key Features
+
+  - 런칭일 기준 역산 스케줄 계산
+  - episode / milestone 자동 생성
+  - 페이지 공정 상태 전이 엔진
+  - 프로젝트 진행률 및 health score 대시보드
+  - 위험 신호와 alert history 조회
+  - 캘린더 기반 일정 조회 및 조정
+  - 프로젝트 멤버 관리
+  - 알림 센터 및 알림 설정
+  - JWT 인증 및 refresh token 세션 관리
+  - Swagger 문서 제공
+  - 단위 / 통합 / E2E 테스트 구성
+
+  ## Tech Stack
+
+  ### Backend
+  - NestJS 11
+  - TypeScript
+  - TypeORM
+  - PostgreSQL
+  - Passport JWT
+  - Event Emitter
+  - Swagger
+  - Jest
+  - Supertest
+
+  ### Frontend
+  - Next.js 16 App Router
+  - React 18
+  - Tailwind CSS
+  - TanStack Query
+  - FullCalendar
+  - Radix UI
+
+  ### Test Environment
+  - SQLite in-memory for tests
 
-- 프로젝트별 에피소드 목록 조회를 지원합니다.
-- 에피소드 상세 조회 시 페이지 목록을 포함해 반환합니다.
-- 기존 데이터에 페이지가 없는 경우, 상세 조회 시 기본 페이지 데이터를 자동 생성합니다.
+  ## Architecture
 
-### 2.3 페이지 공정 워크플로우
+  ```text
+  frontend (Next.js)
+    -> /api proxy
+  backend (NestJS)
+    -> auth
+    -> scheduling
+    -> workflow
+    -> monitor
+    -> notification
+    -> api
+  database (PostgreSQL)
+
+  도메인 모듈은 다음처럼 나눴습니다.
 
-페이지는 다음 4단계 공정을 가집니다.
+  - scheduling: 프로젝트, 에피소드, 마일스톤 일정 계산
+  - workflow: 페이지 공정 상태 전이
+  - monitor: 진행률, 속도, 버퍼, 리스크, health score
+  - notification: 알림, 프로젝트 멤버, 알림 설정
+  - auth: JWT, refresh token, guards
+  - api: REST controller, DTO, exception filter
+
+  ## Technical Highlights
+
+  ### 1. 도메인 규칙을 코드로 강제하는 설계
+
+  이 프로젝트에서 가장 중요하게 본 부분은
+  CRUD를 만드는 것이 아니라 비즈니스 규칙을 시스템 레벨에서 강제하는 것이었습니다.
+
+  예를 들어 워크플로우 엔진은 다음을 보장합니다.
+
+  - 유효하지 않은 상태 전이는 차단
+  - 선행 공정 미완료 시 후속 작업 시작 차단
+  - 완료 시 다음 작업 자동 unlock
+  - 에피소드 전체 진행률 계산 가능
+
+  즉, 사람이 규칙을 기억해서 맞추는 방식이 아니라
+  시스템이 잘못된 작업 흐름을 막는 구조를 만들었습니다.
+
+  ### 2. 역산 기반 스케줄 계산
+
+  단순히 시작일에서 앞으로 미는 방식이 아니라
+  런칭일에서 뒤로 계산하는 제작 일정 모델을 구현했습니다.
+
+  이를 통해:
+
+  - 목표 런칭일 기준 계획 가능
+  - 마일스톤 자동 계산 가능
+  - 회차 수 변경 시 전체 일정 재계산 가능
+  - 프로젝트 운영 리스크를 조기에 감지 가능
+
+  ### 3. 모니터링 지표의 서비스 분리
+
+  모니터링 로직은 하나의 거대한 서비스로 뭉치지 않고 역할별로 나눴습니다.
+
+  - BufferStatusService
+  - RiskAnalyzerService
+  - ProgressService
+  - VelocityAnalyzerService
+  - HealthCheckService
+  - AlertService
+
+  이 구조 덕분에 계산 책임이 분리되고, 테스트와 유지보수가 쉬워졌습니다.
+
+  ### 4. 인증과 프런트 보호 라우트 분리
+
+  인증은 access token과 refresh cookie를 분리했고,
+  프런트 보호 라우트는 단순 쿠키 존재 여부가 아니라 세션 검증 API를 기준으로 처리했습니다.
+
+  즉:
+
+  - 클라이언트 상태에만 의존하지 않고
+  - 서버 검증을 거친 세션 기준으로 접근 제어
+  - refresh token rotation까지 고려한 구조
+
+  ## Screens
+
+  추가하면 좋은 항목:
+
+  - 로그인 화면
+  - 프로젝트 목록 화면
+  - 프로젝트 대시보드
+  - 캘린더 화면
+  - 워크플로우 보드
+  - 알림 센터
+  - 프로젝트 멤버 관리 화면
+
+  여기에 스크린샷이나 GIF를 넣으면 포트폴리오 완성도가 크게 올라갑니다.
+
+  ## Testing
 
-- `BACKGROUND`
-- `LINE_ART`
-- `COLORING`
-- `POST_PROCESSING`
+  이 프로젝트는 기능 문서형 프로젝트가 아니라
+  실제 동작 검증을 염두에 두고 테스트를 함께 구성했습니다.
 
-각 공정은 다음 상태를 가집니다.
+  - Unit Test
+  - Integration Test
+  - E2E Test
 
-- `LOCKED`
-- `READY`
-- `IN_PROGRESS`
-- `DONE`
+  저장소 기준으로 테스트 파일은 총 30개가 포함되어 있습니다.
 
-워크플로우 규칙:
+  검증 범위 예시:
 
-- 선행 공정이 끝나야 다음 공정을 시작할 수 있습니다.
-- 작업 완료 시 다음 공정이 자동으로 잠금 해제됩니다.
-- 에피소드의 첫 작업이 시작되면 에피소드 상태가 `IN_PROGRESS`로 변경됩니다.
-- 모든 페이지의 모든 공정이 완료되면 에피소드 상태가 `COMPLETED`로 변경됩니다.
+  - 스케줄 계산 로직
+  - 속도 설정 검증
+  - 워크플로우 상태 전이
+  - 인증 / 세션
+  - 권한 가드
+  - API 프록시
+  - 프로젝트 라이프사이클
+  - 이벤트 전파
+  - 모니터링 계산
 
-### 2.4 모니터링 및 대시보드
+  ## Project Structure
 
-프로젝트별로 다음 데이터를 조회할 수 있습니다.
+  .
+  ├─ src/
+  │  ├─ api/
+  │  ├─ auth/
+  │  ├─ scheduling/
+  │  ├─ workflow/
+  │  ├─ monitor/
+  │  ├─ notification/
+  │  ├─ config/
+  │  └─ migrations/
+  ├─ frontend/
+  │  ├─ src/app/
+  │  ├─ src/components/
+  │  ├─ src/lib/api/
+  │  ├─ src/lib/hooks/
+  │  └─ src/lib/contexts/
+  ├─ test/
+  ├─ scripts/
+  ├─ infmd/
+  └─ GETTING_STARTED.md
 
-- 전체 대시보드
-- 버퍼 상태
-- 리스크 분석
-- 속도 분석 및 트렌드
-- 건강 점검 결과
-- 알림 히스토리
+  ## Running Locally
 
-프런트엔드 대시보드에서는 다음 정보를 한눈에 볼 수 있습니다.
+  ### Backend
 
-- 프로젝트 진행률
-- 7+3 버퍼 상태
-- 속도 부족 여부
-- 리스크 레벨
-- seal countdown
-- 건강 점수
+  npm install
+  npm run migration:run
+  npm run start:watch
 
-### 2.5 알림 및 협업 기능
+  ### Frontend
 
-- 사용자별 알림 목록 조회
-- 미확인 알림 수 조회
-- 개별 알림 읽음 처리
-- 전체 알림 읽음 처리
-- 프로젝트 멤버 조회 및 추가/삭제
-- 프로젝트별 알림 설정 조회/수정
+  cd frontend
+  npm install
+  npm run dev
 
-프로젝트 생성 시 생성자는 자동으로 해당 프로젝트의 `PD` 역할 멤버로 등록됩니다.
+  ### Default Local URLs
 
-### 2.6 인증 및 권한
+  - Frontend: http://localhost:3000
+  - Backend: http://localhost:3001
+  - Swagger: http://localhost:3001/api/docs
 
-- 회원가입
-- 로그인
-- 리프레시 토큰 세션 유효성 확인
-- 액세스 토큰 발급
-- 리프레시 토큰 쿠키 기반 재발급
-- 로그아웃
-- 현재 로그인 사용자 조회
+  ## Environment
 
-인증 구조는 다음과 같습니다.
+  ### Backend .env
 
-- 액세스 토큰: Authorization Bearer 헤더 사용
-- 리프레시 토큰: HttpOnly 쿠키 사용
-- 프런트 보호 라우트는 Next.js proxy에서 `GET /api/auth/session`으로 리프레시 토큰 세션을 먼저 검증합니다.
-- 기본적으로 대부분의 API는 인증이 필요합니다.
-- `@Public()`이 지정된 엔드포인트만 비로그인 접근이 가능합니다.
-- 일부 프로젝트 API는 프로젝트 권한 가드로 추가 보호됩니다.
-
-### 2.7 알림 모델과 설정 경계
-
-- 헤더와 `/notifications`는 사용자 단위 `notifications`를 사용합니다.
-- `/projects/{id}/alerts`는 프로젝트 상태 분석 결과인 `alerts`를 보여줍니다.
-- `/settings`는 계정과 전역 진입점을 다루고, 실제 프로젝트 알림 규칙 수정은 `/projects/{id}/settings/notifications`에서 처리합니다.
-- 즉, 사용자에게 도착한 메시지는 `notifications`, 프로젝트 건강도와 리스크 신호는 `alerts`로 구분합니다.
-
-## 3. 시스템 구성
-
-### 3.1 백엔드
-
-- Framework: NestJS 11
-- ORM: TypeORM 0.3
-- Database: PostgreSQL
-- Auth: Passport JWT
-- Docs: Swagger
-- Event: `@nestjs/event-emitter`
-- Scheduler: `@nestjs/schedule`
-
-### 3.2 프런트엔드
-
-- Framework: Next.js 16
-- UI: React 18
-- Styling: Tailwind CSS
-- Data Fetching: TanStack Query
-- Calendar: FullCalendar
-
-### 3.3 테스트
-
-- Unit Test: Jest
-- Integration Test: Jest
-- E2E Test: Supertest
-- 테스트 환경 DB: SQLite in-memory
-
-중요:
-
-- 실제 애플리케이션 실행 환경은 PostgreSQL을 사용합니다.
-- 테스트 환경만 SQLite 메모리 DB로 동작합니다.
-
-## 4. 저장소 구조
-
-```text
-.
-├─ src/                  # NestJS 백엔드
-│  ├─ api/               # REST 컨트롤러, DTO, 필터
-│  ├─ auth/              # 인증, JWT, 가드, 사용자
-│  ├─ scheduling/        # 프로젝트/에피소드/마일스톤 일정 계산
-│  ├─ workflow/          # 페이지 공정 상태 전이 로직
-│  ├─ monitor/           # 진행률, 리스크, 건강도, 알림 분석
-│  ├─ notification/      # 알림, 멤버, 설정
-│  └─ config/            # 환경 변수 및 DB 설정
-├─ frontend/             # Next.js 프런트엔드
-│  ├─ src/app/           # App Router 페이지
-│  ├─ src/components/    # 화면 컴포넌트
-│  ├─ src/lib/api/       # API 클라이언트
-│  ├─ src/lib/hooks/     # React Query 기반 훅
-│  └─ src/lib/contexts/  # 인증 컨텍스트 등
-├─ test/                 # 통합/E2E 테스트
-├─ scripts/              # 보조 스크립트
-├─ infmd/                # 설계 문서 및 아이디어 메모
-└─ GETTING_STARTED.md    # 빠른 실행 가이드
-```
+  NODE_ENV=development
+  PORT=3001
+  FRONTEND_URL=http://localhost:3000
 
-## 5. 사전 요구사항
+  DATABASE_HOST=localhost
+  DATABASE_PORT=5432
+  DATABASE_USER=postgres
+  DATABASE_PASSWORD=your_db_password
+  DATABASE_NAME=wpais_db
 
-- Node.js 18 이상
-- npm
-- PostgreSQL 15 이상
+  JWT_SECRET=replace-with-a-long-random-secret
+  JWT_ALGORITHM=HS256
+  JWT_EXPIRES_IN=15m
+  REFRESH_TOKEN_EXPIRES_IN=7d
 
-권장:
+  ### Frontend frontend/.env.local
 
-- 백엔드와 프런트엔드를 각각 별도 터미널에서 실행
-- `.env`와 `frontend/.env.local`을 분리 관리
+  NEXT_PUBLIC_API_URL=http://localhost:3001/api
 
-## 6. 환경 변수
+  ## What I Learned
 
-### 6.1 백엔드 `.env`
+  이 프로젝트를 통해 단순한 웹 서비스 구현보다 더 중요한 몇 가지를 명확히 배웠습니다.
 
-루트 경로에 `.env` 파일을 생성합니다.
+  - 도메인 규칙은 UI가 아니라 백엔드가 강제해야 한다
+  - 운영 대시보드는 데이터 나열보다 해석 가능한 지표가 중요하다
+  - 인증은 토큰 발급보다 세션 검증 흐름 설계가 더 중요하다
+  - 모듈 경계를 명확히 나누면 테스트와 유지보수가 쉬워진다
+  - 풀스택 프로젝트는 화면 구현보다 데이터 흐름과 책임 분리가 핵심이다
 
-```env
-NODE_ENV=development
-PORT=3001
-FRONTEND_URL=http://localhost:3000
+  ## Limitations
 
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=postgres
-DATABASE_PASSWORD=your_db_password
-DATABASE_NAME=wpais_db
-DATABASE_POOL_SIZE=10
-DATABASE_CONNECT_TIMEOUT=10000
+  현재 구현 범위 기준으로 보면, 프로젝트명에 포함된 AI Support 중
+  실제 코드에 구현된 핵심은 AI 추천 기능 자체보다 운영 자동화와 제작 관리 로직입니다.
 
-JWT_SECRET=replace-with-a-long-random-secret
-JWT_ALGORITHM=HS256
-JWT_EXPIRES_IN=15m
-REFRESH_TOKEN_EXPIRES_IN=7d
-LOGIN_RATE_LIMIT_WINDOW_MS=900000
-LOGIN_RATE_LIMIT_MAX=5
-API_RATE_LIMIT_WINDOW_MS=60000
-API_RATE_LIMIT_MAX=300
-```
+  즉, 현재 버전은 다음에 더 가깝습니다.
 
-설명:
+  - 제작 운영 시스템
+  - 일정/공정/리스크 관리 시스템
+  - 협업용 백오피스
 
-- `FRONTEND_URL`: CORS 허용 출처입니다. 로컬 기본 프런트 주소는 `http://localhost:3000`입니다.
-- `JWT_SECRET`: 인증 기능에 필요합니다. 개발 환경에서도 반드시 지정하는 것을 권장합니다.
-- `JWT_ALGORITHM`: 기본값은 `HS256`입니다. 현재 로컬 개발과 기본 배포는 이 값을 사용합니다.
-- `RS256`을 쓰려면 `JWT_PRIVATE_KEY`/`JWT_PUBLIC_KEY` 또는 `JWT_PRIVATE_KEY_PATH`/`JWT_PUBLIC_KEY_PATH`를 함께 설정해야 합니다.
-- `PORT`: 백엔드 기본 포트입니다. 로컬 기본값은 `3001`입니다.
-- 로그인 rate limit 기본값은 15분당 5회입니다.
-- 일반 API rate limit 기본값은 1분당 300회입니다.
+  향후 AI 기능을 붙인다면 다음 확장이 자연스럽습니다.
 
-JWT 서명 정책:
+  - 일정 지연 예측
+  - 위험 회차 조기 추천
+  - 병목 원인 분석
+  - 생산성 기반 추천 일정 보정
+  - 알림 우선순위 자동화
 
-- 현재 기본 운영 정책은 `HS256`입니다.
-- 기존 레거시 스펙의 `RS256` 요구사항은 선택 가능한 배포 설정으로 지원합니다.
-- 즉, 로컬 개발과 기본 설치는 `JWT_SECRET`만으로 동작하고, 운영 환경에서는 비대칭 키 쌍으로 전환할 수 있습니다.
+  ## Future Improvements
 
-### 6.2 프런트엔드 `frontend/.env.local`
+  - AI 기반 일정 지연 예측
+  - 프로젝트 건강도 예측 모델
+  - 작업자별 생산성 분석
+  - 실시간 협업 이벤트 반영
+  - 파일 업로드 및 작업 산출물 연결
+  - 관리자/작가 역할별 UI 분리 강화
+  - 운영 배포 파이프라인 정리
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
-```
+  ## Author
 
-설명:
+  - GitHub: Gosu0101 (https://github.com/Gosu0101)
 
-- 브라우저는 프런트 origin의 `/api/...`로 요청합니다.
-- Next.js route handler가 `/api/*`를 백엔드 `NEXT_PUBLIC_API_URL`로 프록시합니다.
-- 로그인/세션 검증은 이 same-origin `/api` 경로를 사용하므로, 쿠키 기반 인증 흐름이 더 안정적입니다.
-
-## 7. 로컬 실행 방법
-
-### 7.1 의존성 설치
-
-루트에서 백엔드 의존성을 설치합니다.
-
-```bash
-npm install
-```
-
-프런트엔드 의존성도 설치합니다.
-
-```bash
-cd frontend
-npm install
-```
-
-### 7.2 데이터베이스 생성
-
-PostgreSQL에서 데이터베이스를 생성합니다.
-
-```sql
-CREATE DATABASE wpais_db;
-```
-
-### 7.3 마이그레이션 실행
-
-루트에서 실행합니다.
-
-```bash
-npm run migration:run
-```
-
-### 7.4 백엔드 실행
-
-```bash
-npm run start:watch
-```
-
-실행 후 확인:
-
-- API 서버: `http://localhost:3001`
-- Swagger 문서: `http://localhost:3001/api/docs`
-
-실행 모드 차이:
-
-- `npm run start`: 빌드된 `dist/main.js` 실행
-- `npm run start:dev`: 현재 `src` 실행, 자동 재시작 없음
-- `npm run start:watch`: 현재 `src` 실행, 파일 저장 시 자동 재시작
-
-개발 중에는 `start:watch`를 기본값으로 권장합니다. `start`는 최신 빌드를 다시 만들지 않았다면 예전 인증 라우트나 API 스키마를 그대로 띄울 수 있습니다.
-
-### 7.5 Rate Limit 동작
-
-- `POST /api/auth/login`은 IP + 이메일 기준으로 rate limit이 적용됩니다.
-- 그 외 `/api/*` 요청은 IP 기준 일반 rate limit이 적용됩니다.
-- limit 초과 시 `429 Too Many Requests`와 함께 `Retry-After`, `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` 헤더를 반환합니다.
-- Health Check: `http://localhost:3001/api/health`
-
-주의:
-
-- 애플리케이션은 전역 API prefix로 `api`를 사용합니다.
-- 따라서 대부분의 엔드포인트는 `/api/...` 경로로 접근합니다.
-- 개발 중에는 `npm run start`보다 `npm run start:watch` 또는 `npm run start:dev`를 권장합니다.
-- `npm run start`는 `dist/main.js`를 실행하므로, 최신 코드가 빌드되지 않았다면 예전 서버가 뜰 수 있습니다.
-
-### 7.5 프런트엔드 실행
-
-`frontend` 디렉터리에서 실행합니다.
-
-```bash
-npm run dev
-```
-
-로컬 기본 조합은 다음과 같습니다.
-
-- 프런트엔드: `http://localhost:3000`
-- 백엔드 API: `http://localhost:3001`
-- 브라우저에서 보이는 API 요청: `http://localhost:3000/api/...`
-
-인증 메모:
-
-- 로그인 후 세션 검증은 프런트의 `/api/auth/session`을 통해 수행됩니다.
-- 이 요청은 Next.js가 백엔드 `http://localhost:3001/api/auth/session`으로 프록시합니다.
-
-## 8. 빠른 시작 시나리오
-
-처음 확인할 때는 아래 순서가 가장 단순합니다.
-
-1. 백엔드 실행
-2. 프런트엔드 실행
-3. `POST /api/auth/register`로 사용자 생성
-4. `POST /api/auth/login`으로 로그인
-5. `POST /api/projects`로 프로젝트 생성
-6. 프로젝트 상세 및 대시보드 확인
-7. 에피소드 상세에서 페이지 공정 상태 변경
-8. 대시보드, 캘린더, 알림 화면에서 결과 확인
-
-Swagger를 사용하면 인증 후 API를 빠르게 검증할 수 있습니다.
-
-## 9. 주요 화면
-
-프런트엔드에는 다음 주요 페이지가 있습니다.
-
-- `/` : 선택된 프로젝트 기준 대시보드 또는 환영 화면
-- `/login` : 로그인
-- `/register` : 회원가입
-- `/projects` : 프로젝트 목록
-- `/projects/new` : 프로젝트 생성
-- `/projects/[id]` : 프로젝트 상세 대시보드
-- `/projects/[id]/episodes` : 에피소드 목록
-- `/episodes/[id]` : 에피소드 상세 / 워크플로우 보드
-- `/projects/[id]/milestones` : 마일스톤 타임라인
-- `/projects/[id]/alerts` : 경고 및 알림 이력
-- `/projects/[id]/calendar` : 프로젝트 일정 캘린더
-- `/projects/[id]/settings/notifications` : 알림 설정
-
-## 10. 주요 API 엔드포인트
-
-### 10.1 인증
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET /api/auth/session`
-- `POST /api/auth/refresh`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-
-### 10.2 프로젝트
-
-- `POST /api/projects`
-- `GET /api/projects`
-- `GET /api/projects/:id`
-- `PATCH /api/projects/:id`
-- `DELETE /api/projects/:id`
-
-### 10.3 에피소드 및 페이지
-
-- `GET /api/projects/:projectId/episodes`
-- `GET /api/episodes/:id`
-- `GET /api/pages/:id`
-- `POST /api/pages/:pageId/tasks/:taskType/start`
-- `POST /api/pages/:pageId/tasks/:taskType/complete`
-
-### 10.4 모니터링
-
-- `GET /api/projects/:projectId/dashboard`
-- `GET /api/projects/:projectId/buffer-status`
-- `GET /api/projects/:projectId/risk`
-- `GET /api/projects/:projectId/velocity`
-- `GET /api/projects/:projectId/health`
-- `GET /api/projects/:projectId/alerts`
-- `POST /api/alerts/:alertId/acknowledge`
-
-### 10.5 캘린더
-
-- `GET /api/calendar/events`
-- `PATCH /api/calendar/events/:id/reschedule`
-- `GET /api/projects/:projectId/calendar/events`
-
-입력 검증 메모:
-
-- `projectIds`는 UUID 배열이어야 합니다.
-- `types`와 `eventType`은 `episode | milestone | task`만 허용됩니다.
-
-### 10.6 알림 및 멤버 관리
-
-- `GET /api/notifications`
-- `GET /api/notifications/unread-count`
-- `POST /api/notifications/:id/read`
-- `POST /api/notifications/read-all`
-- `GET /api/projects/:projectId/members`
-- `POST /api/projects/:projectId/members`
-- `PATCH /api/projects/:projectId/members/:memberId`
-- `DELETE /api/projects/:projectId/members/:memberId`
-- `GET /api/projects/:projectId/notification-settings`
-- `PATCH /api/projects/:projectId/notification-settings`
-
-계약 메모:
-
-- `notification-settings`는 더 이상 `userId` query string을 받지 않습니다.
-- 설정 조회/수정은 항상 현재 로그인 사용자 기준으로 처리됩니다.
-- `notifications` query의 `projectId`는 UUID여야 하고, `notificationType`, `severity`, `isRead`, `page`, `limit`도 서버에서 검증됩니다.
-
-## 11. 테스트 실행
-
-루트 경로에서 실행합니다.
-
-### 11.1 전체 테스트
-
-```bash
-npm test
-```
-
-### 11.2 감시 모드
-
-```bash
-npm run test:watch
-```
-
-### 11.3 커버리지
-
-```bash
-npm run test:cov
-```
-
-### 11.4 예시
-
-```bash
-npm test -- scheduler.service.spec
-npm test -- workflow-engine.service.spec
-npm test -- integration
-```
-
-테스트 범위에는 다음이 포함됩니다.
-
-- 스케줄 계산 로직
-- 워크플로우 엔진 상태 전이
-- 모니터링 및 이벤트 전파
-- 에러 처리
-- 프로젝트 라이프사이클 E2E
-- 인증/권한 경계 E2E
-
-## 12. 개발 스크립트
-
-### 백엔드
-
-```bash
-npm run build
-npm run start
-npm run start:dev
-npm run start:watch
-npm run test
-npm run test:cov
-npm run migration:generate -- -n MigrationName
-npm run migration:run
-npm run migration:revert
-npm run migration:show
-```
-
-### 프런트엔드
-
-```bash
-npm run dev
-npm run build
-npm run start
-```
-
-## 13. 구현상 참고할 점
-
-- API 전역 prefix는 `/api`입니다.
-- Swagger 문서는 `/api/docs`에서 확인할 수 있습니다.
-- Health Check는 `GET /api/health`입니다.
-- 로컬 개발 기본 포트는 프런트 `3000`, 백엔드 `3001`입니다.
-- 프런트의 `/api/*`는 Next.js route handler가 백엔드 API로 프록시합니다.
-- 대부분의 API는 JWT 인증이 필요합니다.
-- 테스트 환경은 SQLite 메모리 DB를 사용하므로, PostgreSQL 전용 기능과 100% 동일하지 않을 수 있습니다.
-- WSL에서 테스트 실행 시 `sqlite3`가 Windows 바이너리로 설치되어 있으면 `invalid ELF header`가 날 수 있습니다. 이 경우 루트에서 `npm rebuild sqlite3`를 다시 실행해야 합니다.
-- `scripts/seed-members.ts`는 기존 데이터 마이그레이션용 보조 스크립트입니다. 사용 전 DB 접속 정보를 반드시 확인해야 합니다.
-
-## 14. 함께 보면 좋은 문서
-
-- [`GETTING_STARTED.md`](./GETTING_STARTED.md): 빠른 실행 중심 가이드
-- [`infmd`](./infmd): 기획, 설계, 마스터 플랜 문서
-- [`AGENTS.md`](./AGENTS.md): 저장소 공통 에이전트 규칙
-- [`.agent/PORTABILITY.md`](./.agent/PORTABILITY.md): `.kiro` 자산의 portable 변환 가이드
-
-## 15. 권장 확인 순서
-
-이 저장소를 처음 파악할 때는 아래 순서가 효율적입니다.
-
-1. `README.md`로 전체 구조 이해
-2. `GETTING_STARTED.md`로 로컬 실행
-3. Swagger에서 API 동작 확인
-4. `src/scheduling`, `src/workflow`, `src/monitor` 순서로 도메인 로직 확인
-5. `frontend/src/app`과 `frontend/src/components`로 UI 흐름 확인
+  ## Repository
